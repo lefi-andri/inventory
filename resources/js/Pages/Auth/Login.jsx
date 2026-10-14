@@ -4,9 +4,10 @@ import InputLabel from "@/Components/InputLabel";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import GuestLayout from "@/Layouts/GuestLayout";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
 
 export default function Login({ status, canResetPassword }) {
+    const { site } = usePage().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
@@ -26,7 +27,7 @@ export default function Login({ status, canResetPassword }) {
             <Head title="Masuk" />
 
             <div className="mb-6">
-                <h1 className="text-2xl font-black tracking-tight text-slate-950">Masuk ke Stokara</h1>
+                <h1 className="text-2xl font-black tracking-tight text-slate-950">Masuk ke {site.brand_name}</h1>
                 <p className="mt-2 text-sm text-slate-500">Gunakan akun Anda untuk melanjutkan checkout.</p>
             </div>
 

@@ -1,7 +1,9 @@
+import BrandLogo from '@/Components/BrandLogo';
+import ProfileCompletionNotice from '@/Components/ProfileCompletionNotice';
 import { Link, router, usePage } from '@inertiajs/react';
 import {
     Boxes, ChevronDown, ClipboardList, LayoutDashboard, LogOut, Menu,
-    PackageSearch, ShoppingBag, Store, UserRoundCog, X,
+    Images, MessageCircle, PackageSearch, Palette, Store, TicketPercent, UserRoundCog, X,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -10,11 +12,15 @@ const navItems = [
     { label: 'Produk', route: 'products.index', icon: PackageSearch, permission: 'products.view' },
     { label: 'Inventory', route: 'inventory.index', icon: Boxes, permission: 'inventory.view' },
     { label: 'Pesanan', route: 'orders.index', icon: ClipboardList, permission: 'orders.view' },
+    { label: 'Tampilan Situs', route: 'admin.site-settings.edit', icon: Palette, role: 'admin' },
+    { label: 'Hero Banner', route: 'admin.hero-banners.index', icon: Images, role: 'admin' },
+    { label: 'Chat Customer', route: 'admin.chats.index', icon: MessageCircle, role: 'admin' },
+    { label: 'Promo & Ongkir', route: 'admin.promotions.index', icon: TicketPercent, role: 'admin' },
     { label: 'Tim & Role', route: 'users.index', icon: UserRoundCog, permission: 'users.view' },
 ];
 
 export default function AuthenticatedLayout({ title, eyebrow, action, children }) {
-    const { auth, flash } = usePage().props;
+    const { auth, flash, site } = usePage().props;
     const [open, setOpen] = useState(false);
     const [userMenu, setUserMenu] = useState(false);
     const allowed = (permission) => auth.permissions.includes(permission);
@@ -23,20 +29,18 @@ export default function AuthenticatedLayout({ title, eyebrow, action, children }
         <>
             <div className="flex h-20 items-center justify-between px-6">
                 <Link href={route('dashboard')} className="flex items-center gap-3">
-                    <span className="grid size-10 place-items-center rounded-xl bg-lime-300 text-slate-950 shadow-[0_8px_30px_rgba(190,242,100,.18)]">
-                        <ShoppingBag className="size-5" strokeWidth={2.4} />
-                    </span>
+                    <BrandLogo className="size-10 rounded-xl" fallbackClassName="bg-lime-300 text-slate-950 shadow-[0_8px_30px_rgba(190,242,100,.18)]" />
                     <span>
-                        <span className="block text-lg font-extrabold tracking-tight text-white">stokara</span>
+                        <span className="block max-w-36 truncate text-lg font-extrabold tracking-tight text-white">{site.brand_name}</span>
                         <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">commerce ops</span>
                     </span>
                 </Link>
                 <button className="text-slate-400 lg:hidden" onClick={() => setOpen(false)} aria-label="Tutup menu"><X /></button>
             </div>
 
-            <nav className="mt-7 flex-1 space-y-1 px-3">
+            <nav className="mt-7 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
                 <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">Workspace</p>
-                {navItems.filter((item) => allowed(item.permission)).map((item) => {
+                {navItems.filter((item) => item.role ? auth.roles.includes(item.role) : allowed(item.permission)).map((item) => {
                     const Icon = item.icon;
                     const active = route().current(item.route);
                     return (
@@ -95,6 +99,7 @@ export default function AuthenticatedLayout({ title, eyebrow, action, children }
                 <main className="px-4 py-7 sm:px-7 lg:px-10 lg:py-9">
                     {flash?.success && <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{flash.success}</div>}
                     {flash?.error && <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">{flash.error}</div>}
+                    <ProfileCompletionNotice className="mb-6" />
                     {children}
                 </main>
             </div>

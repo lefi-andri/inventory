@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\InventoryMovement;
 use App\Models\Product;
+use App\Services\InventoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,30 +41,35 @@ class InventoryController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, InventoryService $inventory): RedirectResponse
     {
         $data = $request->validate([
             'product_id' => ['required', 'exists:products,id'],
             'type' => ['required', 'in:purchase,adjustment,return,damaged'],
-            'quantity' => ['required', 'integer', 'not_in:0'],
+            'quantity' => [
+                'required',
+                'integer',
+                Rule::when($request->input('type') === 'adjustment', ['not_in:0'], ['min:1']),
+            ],
             'reference' => ['nullable', 'string', 'max:120'],
             'notes' => ['required', 'string', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($data, $request) {
+        DB::transaction(function () use ($data, $request, $inventory) {
             $product = Product::query()->lockForUpdate()->findOrFail($data['product_id']);
-            $after = $product->stock + $data['quantity'];
-            if ($after < 0) {
-                throw ValidationException::withMessages(['quantity' => 'Stok akhir tidak boleh negatif.']);
-            }
+            $quantity = match ($data['type']) {
+                'damaged' => -$data['quantity'],
+                default => $data['quantity'],
+            };
 
-            InventoryMovement::create([
-                ...$data,
-                'user_id' => $request->user()->id,
-                'before_stock' => $product->stock,
-                'after_stock' => $after,
-            ]);
-            $product->update(['stock' => $after]);
+            $inventory->apply(
+                product: $product,
+                quantity: $quantity,
+                type: $data['type'],
+                userId: $request->user()->id,
+                reference: $data['reference'] ?? null,
+                notes: $data['notes'],
+            );
         });
 
         return back()->with('success', 'Pergerakan stok berhasil dicatat.');

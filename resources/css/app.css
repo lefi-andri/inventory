@@ -196,11 +196,51 @@ body { min-width: 320px; }
 button, a { -webkit-tap-highlight-color: transparent; }
 
 @layer components {
-  .form-input {
-    @apply h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
+  /* Application-owned field classes avoid collisions with @tailwindcss/forms. */
+  .app-field.app-field {
+    @apply h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-70;
   }
-  textarea.form-input {
-    @apply h-auto py-2.5;
+  textarea.app-field.app-field {
+    @apply h-auto min-h-24 py-2.5 leading-6;
+  }
+  select.app-field.app-field {
+    @apply cursor-pointer pr-10;
+  }
+  .app-field.app-field[aria-invalid='true'] {
+    @apply border-red-400 ring-2 ring-red-100 focus:border-red-500 focus:ring-red-100;
+  }
+
+  input.app-checkbox.app-checkbox {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex: 0 0 auto;
+    appearance: none;
+    border: 1.5px solid var(--color-slate-300);
+    border-radius: 0.375rem;
+    background-color: white;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 0.75rem 0.75rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+    cursor: pointer;
+    transition: border-color 150ms, background-color 150ms, box-shadow 150ms;
+  }
+  input.app-checkbox.app-checkbox:hover {
+    border-color: var(--color-blue-400);
+  }
+  input.app-checkbox.app-checkbox:checked {
+    border-color: var(--color-blue-600);
+    background-color: var(--color-blue-600);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2.5 6 2.1 2.1L9.5 3.5'/%3E%3C/svg%3E");
+  }
+  input.app-checkbox.app-checkbox:focus-visible {
+    outline: none;
+    border-color: var(--color-blue-500);
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.2);
+  }
+  input.app-checkbox.app-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
   }
 }
 /*

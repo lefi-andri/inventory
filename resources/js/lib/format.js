@@ -27,4 +27,7 @@ export const statusLabel = {
     return: 'Retur',
     damaged: 'Rusak',
     sale: 'Penjualan',
+    opening_balance: 'Stok awal',
+    order_reservation: 'Alokasi pesanan',
+    order_cancellation: 'Pembatalan pesanan',
 };

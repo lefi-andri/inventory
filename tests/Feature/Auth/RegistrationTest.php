@@ -13,10 +13,16 @@ test('new users can register as customers', function () {
         'name' => 'Test Customer',
         'email' => 'customer@example.com',
         'password' => 'password',
-        'password_confirmation' => 'password',
     ]);
 
-    $response->assertRedirect(route('storefront', absolute: false));
+    $response
+        ->assertRedirect(route('storefront', absolute: false))
+        ->assertSessionHas('success');
     $this->assertAuthenticated();
-    expect(User::where('email', 'customer@example.com')->firstOrFail()->hasRole('customer'))->toBeTrue();
+    $user = User::where('email', 'customer@example.com')->firstOrFail();
+
+    expect($user->hasRole('customer'))->toBeTrue()
+        ->and($user->phone)->toBeNull()
+        ->and($user->shipping_address)->toBeNull()
+        ->and($user->checkout_notes)->toBeNull();
 });

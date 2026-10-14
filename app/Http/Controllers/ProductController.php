@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\InventoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -30,14 +32,29 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, InventoryService $inventory): RedirectResponse
     {
         $data = $this->validated($request);
         $data['slug'] = $this->uniqueSlug($data['name']);
         $images = $data['images'] ?? [];
         unset($data['images']);
 
-        $product = Product::create($data);
+        $product = DB::transaction(function () use ($data, $request, $inventory) {
+            $initialStock = (int) $data['stock'];
+            $product = Product::create([...$data, 'stock' => 0]);
+
+            if ($initialStock > 0) {
+                $inventory->apply(
+                    product: $product,
+                    quantity: $initialStock,
+                    type: 'opening_balance',
+                    userId: $request->user()->id,
+                    notes: 'Stok awal saat produk dibuat',
+                );
+            }
+
+            return $product;
+        });
         foreach ($images as $image) {
             $product->addMedia($image)->toMediaCollection('products', 'public');
         }
@@ -66,10 +83,12 @@ class ProductController extends Controller
     {
         if ($product->movements()->exists()) {
             $product->update(['is_active' => false]);
+
             return back()->with('success', 'Produk dinonaktifkan karena sudah memiliki riwayat stok.');
         }
 
         $product->delete();
+
         return back()->with('success', 'Produk berhasil dihapus.');
     }
 
@@ -99,6 +118,7 @@ class ProductController extends Controller
             $slug = "{$base}-{$counter}";
             $counter++;
         }
+
         return $slug;
     }
 

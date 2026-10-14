@@ -3,21 +3,21 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
 export default function Register() {
+    const { site } = usePage().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
         password: '',
-        password_confirmation: '',
     });
 
     const submit = (e) => {
         e.preventDefault();
 
         post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
+            onFinish: () => reset('password'),
         });
     };
 
@@ -26,8 +26,8 @@ export default function Register() {
             <Head title="Daftar" />
 
             <div className="mb-6">
-                <h1 className="text-2xl font-black tracking-tight text-slate-950">Buat akun Stokara</h1>
-                <p className="mt-2 text-sm text-slate-500">Daftar untuk menyimpan identitas pemesan dan melanjutkan checkout.</p>
+                <h1 className="text-2xl font-black tracking-tight text-slate-950">Buat akun {site.brand_name}</h1>
+                <p className="mt-2 text-sm text-slate-500">Daftar dengan data akun Anda. Detail pengiriman dapat dilengkapi setelah masuk.</p>
             </div>
 
             <form onSubmit={submit}>
@@ -80,31 +80,6 @@ export default function Register() {
                     />
 
                     <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Konfirmasi kata sandi"
-                    />
-
-                    <TextInput
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
-                        required
-                    />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
                 </div>
 
                 <div className="mt-4 flex items-center justify-end">

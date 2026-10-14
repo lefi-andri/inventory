@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InventoryMovement;
+use App\Models\CommerceSetting;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Promotion;
+use App\Services\InventoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,23 +16,40 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, InventoryService $inventory): RedirectResponse
     {
+        $customer = $request->user();
+
+        $request->merge([
+            'customer_phone' => $request->filled('customer_phone')
+                ? $request->input('customer_phone')
+                : $customer->phone,
+            'shipping_address' => $request->filled('shipping_address')
+                ? $request->input('shipping_address')
+                : $customer->shipping_address,
+            'notes' => $request->has('notes')
+                ? $request->input('notes')
+                : $customer->checkout_notes,
+        ]);
+
         $data = $request->validate([
-            'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_phone' => ['required', 'string', 'max:30'],
             'shipping_address' => ['required', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'promotion_code' => ['nullable', 'string', 'max:50'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
         ]);
 
-        $order = DB::transaction(function () use ($data, $request) {
+        $order = DB::transaction(function () use ($data, $request, $inventory) {
             $customer = $request->user();
             $lines = [];
             $subtotal = 0;
 
-            foreach ($data['items'] as $item) {
+            $items = collect($data['items'])->sortBy('product_id');
+
+            foreach ($items as $item) {
                 $product = Product::query()->lockForUpdate()->findOrFail($item['product_id']);
                 if (! $product->is_active || $product->stock < $item['quantity']) {
                     throw ValidationException::withMessages([
@@ -42,24 +62,37 @@ class CheckoutController extends Controller
                 $lines[] = compact('product', 'item', 'lineTotal');
             }
 
-            $shippingCost = $subtotal >= 500000 ? 0 : 25000;
+            $promotion = null;
+            $discountAmount = 0;
+            if (! empty($data['promotion_code'])) {
+                $promotion = Promotion::query()->lockForUpdate()->where('code', strtoupper(trim($data['promotion_code'])))->first();
+                if (! $promotion) throw ValidationException::withMessages(['promotion_code' => 'Kode kupon atau voucher tidak ditemukan.']);
+                if ($reason = $promotion->unavailableReason($subtotal)) throw ValidationException::withMessages(['promotion_code' => $reason]);
+                $discountAmount = $promotion->discountFor($subtotal);
+            }
+
+            $shippingCost = CommerceSetting::current()->shippingFor($subtotal);
             $order = Order::create([
-                ...collect($data)->except('items')->all(),
+                ...collect($data)->except(['items', 'promotion_code'])->all(),
                 'user_id' => $customer->id,
                 'customer_name' => $customer->name,
                 'customer_email' => $customer->email,
                 'order_number' => 'ORD-'.now()->format('ymd').'-'.strtoupper(Str::random(6)),
+                'promotion_id' => $promotion?->id,
+                'promotion_code' => $promotion?->code,
+                'promotion_kind' => $promotion?->kind,
                 'subtotal' => $subtotal,
+                'discount_amount' => $discountAmount,
                 'shipping_cost' => $shippingCost,
-                'total' => $subtotal + $shippingCost,
+                'total' => max(0, $subtotal - $discountAmount) + $shippingCost,
             ]);
+
+            $promotion?->increment('used_count');
 
             foreach ($lines as $line) {
                 /** @var Product $product */
                 $product = $line['product'];
                 $quantity = $line['item']['quantity'];
-                $before = $product->stock;
-
                 $order->items()->create([
                     'product_id' => $product->id,
                     'product_name' => $product->name,
@@ -69,21 +102,48 @@ class CheckoutController extends Controller
                     'subtotal' => $line['lineTotal'],
                 ]);
 
-                $product->decrement('stock', $quantity);
-                InventoryMovement::create([
-                    'product_id' => $product->id,
-                    'type' => 'sale',
-                    'quantity' => -$quantity,
-                    'before_stock' => $before,
-                    'after_stock' => $before - $quantity,
-                    'reference' => $order->order_number,
-                    'notes' => 'Pesanan dari storefront',
-                ]);
+                $inventory->apply(
+                    product: $product,
+                    quantity: -$quantity,
+                    type: 'order_reservation',
+                    userId: $request->user()->id,
+                    reference: $order->order_number,
+                    notes: 'Stok dialokasikan untuk pesanan storefront',
+                );
             }
 
             return $order;
         });
 
         return back()->with('success', "Pesanan {$order->order_number} berhasil dibuat.");
+    }
+
+    public function validatePromotion(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'promotion_code' => ['required', 'string', 'max:50'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+        ]);
+
+        $subtotal = collect($data['items'])->sum(function ($item) {
+            $product = Product::query()->where('is_active', true)->findOrFail($item['product_id']);
+            return (float) $product->price * $item['quantity'];
+        });
+        $promotion = Promotion::query()->where('code', strtoupper(trim($data['promotion_code'])))->first();
+        if (! $promotion) throw ValidationException::withMessages(['promotion_code' => 'Kode kupon atau voucher tidak ditemukan.']);
+        if ($reason = $promotion->unavailableReason($subtotal)) throw ValidationException::withMessages(['promotion_code' => $reason]);
+
+        $discount = $promotion->discountFor($subtotal);
+        $shipping = CommerceSetting::current()->shippingFor($subtotal);
+
+        return response()->json([
+            'promotion' => ['code' => $promotion->code, 'kind' => $promotion->kind, 'description' => $promotion->description],
+            'subtotal' => $subtotal,
+            'discount_amount' => $discount,
+            'shipping_cost' => $shipping,
+            'total' => max(0, $subtotal - $discount) + $shipping,
+        ]);
     }
 }

@@ -2,6 +2,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
+import SearchSelect from '@/Components/SearchSelect';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { currency } from '@/lib/format';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
@@ -16,6 +17,10 @@ export default function ProductsIndex({ products, categories, filters }) {
     const [editing, setEditing] = useState(null);
     const [search, setSearch] = useState(filters.search || '');
     const form = useForm(initialForm);
+    const categoryOptions = [
+        { value: '', label: 'Tanpa kategori' },
+        ...categories.map((category) => ({ value: category.id, label: category.name })),
+    ];
 
     const openCreate = () => { setEditing(null); form.reset(); form.clearErrors(); setModalOpen(true); };
     const openEdit = (product) => {
@@ -54,13 +59,13 @@ export default function ProductsIndex({ products, categories, filters }) {
                 <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
                     <DialogHeader><DialogTitle>{editing ? 'Edit produk' : 'Tambah produk baru'}</DialogTitle><DialogDescription>{editing ? 'Perbarui informasi katalog. Perubahan stok dilakukan dari menu Inventory.' : 'Isi informasi produk dan unggah hingga empat gambar.'}</DialogDescription></DialogHeader>
                     <form onSubmit={submit} className="space-y-5">
-                        <div className="grid gap-4 sm:grid-cols-2"><Field label="Nama produk" error={form.errors.name}><input value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} className="form-input" required /></Field><Field label="SKU" error={form.errors.sku}><input value={form.data.sku} onChange={(e) => form.setData('sku', e.target.value.toUpperCase())} className="form-input" required /></Field></div>
-                        <Field label="Kategori" error={form.errors.category_id}><select value={form.data.category_id} onChange={(e) => form.setData('category_id', e.target.value)} className="form-input"><option value="">Tanpa kategori</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></Field>
-                        <Field label="Deskripsi" error={form.errors.description}><textarea value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} rows="3" className="form-input resize-none" /></Field>
-                        <div className="grid gap-4 sm:grid-cols-2"><Field label="Harga jual" error={form.errors.price}><input type="number" min="0" value={form.data.price} onChange={(e) => form.setData('price', e.target.value)} className="form-input" required /></Field><Field label="Harga modal" error={form.errors.cost}><input type="number" min="0" value={form.data.cost} onChange={(e) => form.setData('cost', e.target.value)} className="form-input" required /></Field></div>
-                        <div className="grid gap-4 sm:grid-cols-2">{!editing && <Field label="Stok awal" error={form.errors.stock}><input type="number" min="0" value={form.data.stock} onChange={(e) => form.setData('stock', e.target.value)} className="form-input" required /></Field>}<Field label="Batas stok minimum" error={form.errors.low_stock_threshold}><input type="number" min="0" value={form.data.low_stock_threshold} onChange={(e) => form.setData('low_stock_threshold', e.target.value)} className="form-input" required /></Field></div>
+                        <div className="grid gap-4 sm:grid-cols-2"><Field label="Nama produk" error={form.errors.name}><input value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} className="app-field" required /></Field><Field label="SKU" error={form.errors.sku}><input value={form.data.sku} onChange={(e) => form.setData('sku', e.target.value.toUpperCase())} className="app-field" required /></Field></div>
+                        <Field label="Kategori" error={form.errors.category_id}><SearchSelect options={categoryOptions} value={form.data.category_id} onChange={(value) => form.setData('category_id', value)} placeholder="Cari kategori..." noOptionsMessage="Kategori tidak ditemukan" aria-label="Kategori produk" /></Field>
+                        <Field label="Deskripsi" error={form.errors.description}><textarea value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} rows="3" className="app-field resize-none" /></Field>
+                        <div className="grid gap-4 sm:grid-cols-2"><Field label="Harga jual" error={form.errors.price}><input type="number" min="0" value={form.data.price} onChange={(e) => form.setData('price', e.target.value)} className="app-field" required /></Field><Field label="Harga modal" error={form.errors.cost}><input type="number" min="0" value={form.data.cost} onChange={(e) => form.setData('cost', e.target.value)} className="app-field" required /></Field></div>
+                        <div className="grid gap-4 sm:grid-cols-2">{!editing && <Field label="Stok awal" error={form.errors.stock}><input type="number" min="0" value={form.data.stock} onChange={(e) => form.setData('stock', e.target.value)} className="app-field" required /></Field>}<Field label="Batas stok minimum" error={form.errors.low_stock_threshold}><input type="number" min="0" value={form.data.low_stock_threshold} onChange={(e) => form.setData('low_stock_threshold', e.target.value)} className="app-field" required /></Field></div>
                         <Field label="Gambar produk (JPG, PNG, WebP · maks. 4 MB)"><label className="flex cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-7 text-sm font-semibold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50"><ImagePlus className="size-5 text-blue-600" />{form.data.images.length ? `${form.data.images.length} file dipilih` : 'Pilih gambar produk'}<input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(e) => form.setData('images', Array.from(e.target.files).slice(0, 4))} /></label>{form.errors.images && <p className="mt-1 text-xs text-red-600">{form.errors.images}</p>}</Field>
-                        <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={form.data.is_active} onChange={(e) => form.setData('is_active', e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" /> Tampilkan produk di storefront</label>
+                        <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={form.data.is_active} onChange={(e) => form.setData('is_active', e.target.checked)} className="app-checkbox" /> Tampilkan produk di storefront</label>
                         <DialogFooter><Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Batal</Button><Button disabled={form.processing} className="bg-blue-600 hover:bg-blue-700">{form.processing ? 'Menyimpan...' : 'Simpan produk'}</Button></DialogFooter>
                     </form>
                 </DialogContent>

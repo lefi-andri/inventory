@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -27,14 +28,14 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
@@ -50,6 +51,9 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('storefront', absolute: false));
+        return redirect(route('storefront', absolute: false))->with(
+            'success',
+            'Akun berhasil dibuat. Lengkapi data diri dan alamat pengiriman Anda sebelum berbelanja.',
+        );
     }
 }

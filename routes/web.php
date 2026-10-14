@@ -1,10 +1,16 @@
 <?php
 
+use App\Http\Controllers\AdminChatController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CustomerChatController;
+use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HeroBannerController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\SiteSettingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\UserManagementController;
@@ -17,6 +23,12 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 
 Route::middleware('auth')->group(function () {
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout/promotion', [CheckoutController::class, 'validatePromotion'])->name('checkout.promotion.validate');
+    Route::get('/my-orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
+    Route::patch('/my-orders/{order}/received', [CustomerOrderController::class, 'confirmReceived'])->name('customer.orders.received');
+    Route::get('/chat', [CustomerChatController::class, 'index'])->name('customer.chat.index');
+    Route::get('/chat/messages', [CustomerChatController::class, 'messages'])->name('customer.chat.messages.index');
+    Route::post('/chat/messages', [CustomerChatController::class, 'store'])->name('customer.chat.messages.store');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -36,6 +48,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/users', [UserManagementController::class, 'index'])->middleware('permission:users.view')->name('users.index');
     Route::post('/users', [UserManagementController::class, 'store'])->middleware('permission:users.manage')->name('users.store');
     Route::patch('/users/{user}', [UserManagementController::class, 'update'])->middleware('permission:users.manage')->name('users.update');
+
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/site-settings', [SiteSettingController::class, 'edit'])->name('site-settings.edit');
+        Route::patch('/site-settings', [SiteSettingController::class, 'update'])->name('site-settings.update');
+        Route::get('/hero-banners', [HeroBannerController::class, 'index'])->name('hero-banners.index');
+        Route::post('/hero-banners', [HeroBannerController::class, 'store'])->name('hero-banners.store');
+        Route::patch('/hero-banners/{heroBanner}', [HeroBannerController::class, 'update'])->name('hero-banners.update');
+        Route::delete('/hero-banners/{heroBanner}', [HeroBannerController::class, 'destroy'])->name('hero-banners.destroy');
+        Route::get('/chats/{conversation?}', [AdminChatController::class, 'index'])->name('chats.index');
+        Route::post('/chats/{conversation}/messages', [AdminChatController::class, 'store'])->name('chats.messages.store');
+        Route::patch('/chats/{conversation}/status', [AdminChatController::class, 'updateStatus'])->name('chats.status.update');
+        Route::get('/promotions', [PromotionController::class, 'index'])->name('promotions.index');
+        Route::post('/promotions', [PromotionController::class, 'store'])->name('promotions.store');
+        Route::patch('/promotions/{promotion}', [PromotionController::class, 'update'])->name('promotions.update');
+        Route::delete('/promotions/{promotion}', [PromotionController::class, 'destroy'])->name('promotions.destroy');
+        Route::patch('/shipping-settings', [PromotionController::class, 'updateShipping'])->name('shipping-settings.update');
+    });
 });
 
 require __DIR__.'/auth.php';
