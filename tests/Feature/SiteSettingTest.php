@@ -96,7 +96,7 @@ test('non admin cannot manage site settings', function () {
 
 test('unsafe navigation links are rejected', function () {
     $this->actingAs(siteSettingsAdmin())->patch(route('admin.site-settings.update'), [
-        'brand_name' => 'Stokara',
+        'brand_name' => 'TithoShop',
         'remove_logo' => false,
         'navbar_links' => [['label' => 'Tidak aman', 'url' => 'javascript:alert(1)', 'is_active' => true]],
         'footer_description' => null,
@@ -107,7 +107,7 @@ test('unsafe navigation links are rejected', function () {
 
 test('admin can update brand identity without logo via json patch', function () {
     $this->actingAs(siteSettingsAdmin())->patch(route('admin.site-settings.update'), [
-        'brand_name' => 'Stokara Baru Sukses',
+        'brand_name' => 'TithoShop Baru Sukses',
         'remove_logo' => false,
         'navbar_links' => [
             ['label' => 'Produk', 'url' => '#produk', 'is_active' => true],
@@ -118,7 +118,7 @@ test('admin can update brand identity without logo via json patch', function () 
     ])->assertSessionHasNoErrors()
         ->assertSessionHas('success');
 
-    expect(SiteSetting::current()->fresh()->brand_name)->toBe('Stokara Baru Sukses');
+    expect(SiteSetting::current()->fresh()->brand_name)->toBe('TithoShop Baru Sukses');
 });
 
 test('admin can update brand identity even when multipart bracket notation fragments link arrays', function () {
@@ -153,7 +153,7 @@ test('admin can update brand identity even when multipart bracket notation fragm
 
 test('admin can customize site theme color with preset or custom hex', function () {
     $this->actingAs(siteSettingsAdmin())->patch(route('admin.site-settings.update'), [
-        'brand_name' => 'Stokara Hijau',
+        'brand_name' => 'TithoShop Hijau',
         'theme_color' => '#059669',
         'remove_logo' => false,
         'navbar_links' => [],
@@ -175,7 +175,7 @@ test('admin can customize site theme color with preset or custom hex', function 
 
 test('invalid theme color format is rejected', function () {
     $this->actingAs(siteSettingsAdmin())->patch(route('admin.site-settings.update'), [
-        'brand_name' => 'Stokara',
+        'brand_name' => 'TithoShop',
         'theme_color' => 'not-a-color',
         'remove_logo' => false,
         'navbar_links' => [],
@@ -228,6 +228,35 @@ test('admin can remove favicon', function () {
     $settings = SiteSetting::current()->fresh();
     expect($settings->getMedia('site-favicon'))->toHaveCount(0);
     expect($settings->toSharedArray()['favicon'])->toBeNull();
+});
+
+test('admin can update default site language to english or indonesian', function () {
+    $this->actingAs(siteSettingsAdmin())->patch(route('admin.site-settings.update'), [
+        'brand_name' => 'TithoShop Global',
+        'default_locale' => 'en',
+        'navbar_links' => [],
+        'footer_links' => [],
+    ])->assertSessionHasNoErrors();
+
+    $settings = SiteSetting::current()->fresh();
+    expect($settings->default_locale)->toBe('en');
+
+    // Shared to Inertia pages
+    $this->get(route('storefront'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('site.default_locale', 'en')
+            ->where('defaultLocale', 'en')
+            ->where('locale', 'en'));
+});
+
+test('invalid default site language is rejected', function () {
+    $this->actingAs(siteSettingsAdmin())->patch(route('admin.site-settings.update'), [
+        'brand_name' => 'TithoShop',
+        'default_locale' => 'fr',
+        'navbar_links' => [],
+        'footer_links' => [],
+    ])->assertSessionHasErrors('default_locale');
 });
 
 

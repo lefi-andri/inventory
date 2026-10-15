@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CommerceSetting;
 use App\Models\SiteSetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -42,11 +43,21 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
             'locale' => app()->getLocale(),
+            'defaultLocale' => fn () => SiteSetting::current()->default_locale ?: 'id',
             'supportedLocales' => [
                 ['value' => 'id', 'label' => 'Bahasa Indonesia', 'short_label' => 'ID'],
                 ['value' => 'en', 'label' => 'English', 'short_label' => 'EN'],
             ],
-            'site' => fn () => SiteSetting::current()->load('media')->toSharedArray(),
+            'currency' => fn () => CommerceSetting::current()->currency ?? 'IDR',
+            'site' => function () {
+                $site = SiteSetting::current()->load('media')->toSharedArray();
+                $site['currency'] = CommerceSetting::current()->currency ?? 'IDR';
+
+                return $site;
+            },
+            'admin_notifications' => fn () => $request->user()?->hasRole('admin')
+                ? app(\App\Services\AdminNotificationService::class)->getNotificationsData()
+                : null,
         ];
     }
 }

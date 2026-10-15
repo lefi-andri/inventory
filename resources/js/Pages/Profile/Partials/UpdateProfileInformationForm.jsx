@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { CheckCircle2 } from 'lucide-react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -37,6 +38,16 @@ export default function UpdateProfileInformation({
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                     Perbarui data akun yang otomatis digunakan saat checkout.
                 </p>
+
+                {(recentlySuccessful || status === 'profile-updated') && (
+                    <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-xs animate-in fade-in duration-300">
+                        <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
+                        <div>
+                            <p className="font-extrabold text-emerald-950">Berhasil diperbarui</p>
+                            <p className="text-xs text-emerald-700">Informasi profil dan alamat pengiriman Anda telah berhasil disimpan.</p>
+                        </div>
+                    </div>
+                )}
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
@@ -142,18 +153,21 @@ export default function UpdateProfileInformation({
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Simpan</PrimaryButton>
+                    <PrimaryButton disabled={processing}>
+                        {processing ? 'Menyimpan...' : 'Simpan'}
+                    </PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
+                        enter="transition ease-in-out duration-300"
+                        enterFrom="opacity-0 translate-x-2"
+                        leave="transition ease-in-out duration-300"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="flex items-center gap-1.5 text-sm font-bold text-emerald-600">
+                            <CheckCircle2 className="size-4" />
                             Tersimpan.
-                        </p>
+                        </span>
                     </Transition>
                 </div>
             </form>

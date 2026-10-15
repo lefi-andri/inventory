@@ -49,7 +49,9 @@ test('profile information can be updated', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect('/profile');
+        ->assertRedirect('/profile')
+        ->assertSessionHas('status', 'profile-updated')
+        ->assertSessionHas('success', 'Informasi profil dan pengiriman berhasil diperbarui.');
 
     $user->refresh();
 

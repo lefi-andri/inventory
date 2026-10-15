@@ -16,7 +16,7 @@ export default function LegalNotice({ type = 'cookie', title, content }) {
         window.dispatchEvent(new CustomEvent('open-cookie-settings'));
     };
 
-    const brandName = site?.brand_name || 'Stokara';
+    const brandName = site?.brand_name || 'TithoShop';
     const copyright = site?.footer_copyright || `© ${new Date().getFullYear()} ${brandName}. Semua hak dilindungi.`;
 
     return (

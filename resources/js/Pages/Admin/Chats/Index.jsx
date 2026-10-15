@@ -1,3 +1,5 @@
+import ChatAttachment, { formatFileSize } from '@/Components/ChatAttachment';
+import ChatEmojiPicker, { insertEmojiAtCursor } from '@/Components/ChatEmojiPicker';
 import SearchSelect from '@/Components/SearchSelect';
 import { Button } from '@/Components/ui/button';
 import {
@@ -12,13 +14,16 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     CheckCheck,
+    FileText,
     Inbox,
     Lock,
     MessageCircle,
     MessageSquarePlus,
+    Paperclip,
     RotateCcw,
     Send,
     UserRound,
+    X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { activeLocale } from '@/lib/format';
@@ -32,10 +37,19 @@ const messageTime = (value) => new Intl.DateTimeFormat(activeLocale(), {
 
 export default function ChatIndex({ customers, conversations, activeConversation }) {
     const { auth } = usePage().props;
-    const replyForm = useForm({ body: '' });
-    const startForm = useForm({ customer_id: '', body: '' });
+    const replyForm = useForm({ body: '', attachment: null });
+    const startForm = useForm({ customer_id: '', body: '', attachment: null });
     const [startOpen, setStartOpen] = useState(false);
+    const [replyFilePreview, setReplyFilePreview] = useState(null);
+    const [replyFileError, setReplyFileError] = useState('');
+    const [startFilePreview, setStartFilePreview] = useState(null);
+    const [startFileError, setStartFileError] = useState('');
     const endRef = useRef(null);
+    const replyFileInputRef = useRef(null);
+    const startFileInputRef = useRef(null);
+    const replyTextareaRef = useRef(null);
+    const startTextareaRef = useRef(null);
+
     const messages = activeConversation?.messages ?? [];
     const customerOptions = customers.map((customer) => ({
         value: customer.id,
@@ -63,26 +77,116 @@ export default function ChatIndex({ customers, conversations, activeConversation
         return () => window.clearInterval(interval);
     }, [replyForm.processing, startForm.processing]);
 
+    const handleReplyFileSelect = (event) => {
+        const file = event.target.files?.[0];
+        setReplyFileError('');
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            setReplyFileError('Ukuran file maksimal 10MB.');
+            event.target.value = '';
+            return;
+        }
+
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+        if (!allowed.includes(file.type)) {
+            setReplyFileError('Format file tidak didukung. Pilih gambar (JPG, PNG, WebP) atau file PDF.');
+            event.target.value = '';
+            return;
+        }
+
+        replyForm.setData('attachment', file);
+        const isImage = file.type.startsWith('image/');
+        setReplyFilePreview({
+            name: file.name,
+            size: file.size,
+            isImage,
+            url: isImage ? URL.createObjectURL(file) : null,
+        });
+    };
+
+    const clearReplyAttachment = () => {
+        if (replyFilePreview?.url) {
+            URL.revokeObjectURL(replyFilePreview.url);
+        }
+        setReplyFilePreview(null);
+        setReplyFileError('');
+        replyForm.setData('attachment', null);
+        if (replyFileInputRef.current) {
+            replyFileInputRef.current.value = '';
+        }
+    };
+
+    const handleStartFileSelect = (event) => {
+        const file = event.target.files?.[0];
+        setStartFileError('');
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            setStartFileError('Ukuran file maksimal 10MB.');
+            event.target.value = '';
+            return;
+        }
+
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+        if (!allowed.includes(file.type)) {
+            setStartFileError('Format file tidak didukung. Pilih gambar atau PDF.');
+            event.target.value = '';
+            return;
+        }
+
+        startForm.setData('attachment', file);
+        const isImage = file.type.startsWith('image/');
+        setStartFilePreview({
+            name: file.name,
+            size: file.size,
+            isImage,
+            url: isImage ? URL.createObjectURL(file) : null,
+        });
+    };
+
+    const clearStartAttachment = () => {
+        if (startFilePreview?.url) {
+            URL.revokeObjectURL(startFilePreview.url);
+        }
+        setStartFilePreview(null);
+        setStartFileError('');
+        startForm.setData('attachment', null);
+        if (startFileInputRef.current) {
+            startFileInputRef.current.value = '';
+        }
+    };
+
     const submitReply = (event) => {
         event.preventDefault();
 
-        if (!activeConversation || !replyForm.data.body.trim()) return;
+        const hasText = Boolean(replyForm.data.body?.trim());
+        const hasFile = Boolean(replyForm.data.attachment);
+        if (!activeConversation || (!hasText && !hasFile)) return;
 
         replyForm.post(route('admin.chats.messages.store', activeConversation.id), {
+            forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => replyForm.reset('body'),
+            onSuccess: () => {
+                replyForm.reset('body');
+                clearReplyAttachment();
+            },
         });
     };
 
     const submitStart = (event) => {
         event.preventDefault();
 
-        if (!startForm.data.customer_id || !startForm.data.body.trim()) return;
+        const hasText = Boolean(startForm.data.body?.trim());
+        const hasFile = Boolean(startForm.data.attachment);
+        if (!startForm.data.customer_id || (!hasText && !hasFile)) return;
 
         startForm.post(route('admin.chats.store'), {
+            forceFormData: true,
             onSuccess: () => {
                 setStartOpen(false);
                 startForm.reset();
+                clearStartAttachment();
             },
         });
     };
@@ -93,6 +197,7 @@ export default function ChatIndex({ customers, conversations, activeConversation
         if (!open && !startForm.processing) {
             startForm.reset();
             startForm.clearErrors();
+            clearStartAttachment();
         }
     };
 
@@ -142,22 +247,29 @@ export default function ChatIndex({ customers, conversations, activeConversation
                                         <UserRound className="size-5" />
                                     </span>
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="truncate text-sm font-extrabold">{conversation.customer.name}</p>
-                                            {conversation.unread_count > 0 && (
-                                                <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-black text-white">
-                                                    {conversation.unread_count}
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="truncate font-bold text-slate-900">
+                                                {conversation.customer.name}
+                                            </p>
+                                            {conversation.last_message_at && (
+                                                <span className="shrink-0 text-[10px] text-slate-400">
+                                                    {messageTime(conversation.last_message_at)}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="mt-0.5 truncate text-xs text-slate-500">
+                                        <p className="truncate text-xs text-slate-500">
                                             {conversation.last_message || 'Belum ada pesan'}
                                         </p>
-                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-                                            <span>{conversation.last_message_at ? messageTime(conversation.last_message_at) : ''}</span>
-                                            <span className={conversation.status === 'closed' ? 'text-slate-500' : 'text-emerald-600'}>
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <span className={`inline-block size-2 rounded-full ${conversation.status === 'closed' ? 'bg-slate-300' : 'bg-emerald-500'}`} />
+                                            <span className="text-[11px] capitalize text-slate-400">
                                                 {conversation.status === 'closed' ? 'Ditutup' : 'Aktif'}
                                             </span>
+                                            {conversation.unread_count > 0 && (
+                                                <span className="ml-auto rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                                                    {conversation.unread_count} baru
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -165,16 +277,8 @@ export default function ChatIndex({ customers, conversations, activeConversation
                         ))}
 
                         {!conversations.length && (
-                            <div className="px-5 py-16 text-center">
-                                <MessageCircle className="mx-auto size-8 text-slate-300" />
-                                <p className="mt-3 text-sm font-semibold text-slate-500">Belum ada percakapan.</p>
-                                <button
-                                    type="button"
-                                    onClick={() => setStartOpen(true)}
-                                    className="mt-2 text-sm font-bold text-blue-600 hover:text-blue-700"
-                                >
-                                    Mulai chat dengan customer
-                                </button>
+                            <div className="p-8 text-center text-sm text-slate-400">
+                                Belum ada percakapan.
                             </div>
                         )}
                     </div>
@@ -209,7 +313,14 @@ export default function ChatIndex({ customers, conversations, activeConversation
                                                     ? (message.sender_id === auth.user.id ? 'Anda' : message.sender_name)
                                                     : message.sender_name}
                                             </p>
-                                            <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.body}</p>
+                                            {message.attachment && (
+                                                <ChatAttachment attachment={message.attachment} isMine={mine} />
+                                            )}
+                                            {message.body && (
+                                                <p className={`whitespace-pre-wrap break-words text-sm leading-6 ${message.attachment ? 'mt-2' : ''}`}>
+                                                    {message.body}
+                                                </p>
+                                            )}
                                             <p className="mt-1.5 flex items-center justify-end gap-1 text-[11px] text-slate-400">
                                                 {messageTime(message.created_at)}
                                                 {mine && message.read_at && <CheckCheck className="size-3.5" />}
@@ -222,9 +333,66 @@ export default function ChatIndex({ customers, conversations, activeConversation
                         </div>
 
                         <form onSubmit={submitReply} className="border-t border-slate-100 p-4">
-                            <div className="flex items-end gap-3">
+                            {/* File Attachment Preview */}
+                            {replyFilePreview && (
+                                <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50/70 p-2.5 sm:max-w-md">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        {replyFilePreview.isImage ? (
+                                            <img
+                                                src={replyFilePreview.url}
+                                                alt="Preview"
+                                                className="size-11 rounded-lg object-cover border border-blue-200 shrink-0"
+                                            />
+                                        ) : (
+                                            <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-rose-100 text-rose-600 font-bold">
+                                                <FileText className="size-6" />
+                                            </span>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="truncate text-xs font-bold text-slate-900">{replyFilePreview.name}</p>
+                                            <p className="text-[10px] text-slate-500 font-semibold">{formatFileSize(replyFilePreview.size)}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={clearReplyAttachment}
+                                        className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700 transition"
+                                        title="Hapus lampiran"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {replyFileError && <p className="mb-2 text-xs font-semibold text-red-600">{replyFileError}</p>}
+                            {replyForm.errors.attachment && <p className="mb-2 text-xs font-semibold text-red-600">{replyForm.errors.attachment}</p>}
+
+                            <div className="flex items-end gap-2.5">
+                                <input
+                                    type="file"
+                                    ref={replyFileInputRef}
+                                    onChange={handleReplyFileSelect}
+                                    accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                                    className="hidden"
+                                />
+                                <ChatEmojiPicker
+                                    onSelect={(emoji) => insertEmojiAtCursor(replyTextareaRef, replyForm.data.body, emoji, (text) => replyForm.setData('body', text))}
+                                    placement="top-left"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => replyFileInputRef.current?.click()}
+                                    disabled={replyForm.processing}
+                                    className="grid size-11 shrink-0 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition disabled:opacity-50"
+                                    title="Lampirkan Gambar atau PDF (Maks. 10MB)"
+                                    aria-label="Lampirkan file"
+                                >
+                                    <Paperclip className="size-5" />
+                                </button>
+
                                 <div className="flex-1">
                                     <textarea
+                                        ref={replyTextareaRef}
                                         value={replyForm.data.body}
                                         onChange={(event) => replyForm.setData('body', event.target.value)}
                                         onKeyDown={(event) => {
@@ -235,7 +403,7 @@ export default function ChatIndex({ customers, conversations, activeConversation
                                         }}
                                         rows="2"
                                         maxLength="2000"
-                                        placeholder="Tulis balasan..."
+                                        placeholder={replyFilePreview ? "Keterangan balasan (opsional)..." : "Tulis balasan..."}
                                         className="app-field resize-none"
                                         aria-label="Balasan"
                                     />
@@ -244,7 +412,8 @@ export default function ChatIndex({ customers, conversations, activeConversation
                                     )}
                                 </div>
                                 <Button
-                                    disabled={replyForm.processing || !replyForm.data.body.trim()}
+                                    type="submit"
+                                    disabled={replyForm.processing || (!replyForm.data.body?.trim() && !replyForm.data.attachment)}
                                     className="h-11 rounded-xl bg-blue-600 px-4 hover:bg-blue-700"
                                 >
                                     <Send /> Kirim
@@ -268,7 +437,7 @@ export default function ChatIndex({ customers, conversations, activeConversation
                     <DialogHeader>
                         <DialogTitle>Mulai chat baru</DialogTitle>
                         <DialogDescription>
-                            Pilih customer terdaftar dan kirim pesan pertama dari admin.
+                            Pilih customer terdaftar dan kirim pesan atau dokumen pertama dari admin.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -296,16 +465,72 @@ export default function ChatIndex({ customers, conversations, activeConversation
                             </p>
                         )}
 
+                        {/* File Attachment in Start Dialog */}
+                        {startFilePreview && (
+                            <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50/70 p-2.5">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    {startFilePreview.isImage ? (
+                                        <img
+                                            src={startFilePreview.url}
+                                            alt="Preview"
+                                            className="size-11 rounded-lg object-cover border border-blue-200 shrink-0"
+                                        />
+                                    ) : (
+                                        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-rose-100 text-rose-600 font-bold">
+                                            <FileText className="size-6" />
+                                        </span>
+                                    )}
+                                    <div className="min-w-0">
+                                        <p className="truncate text-xs font-bold text-slate-900">{startFilePreview.name}</p>
+                                        <p className="text-[10px] text-slate-500 font-semibold">{formatFileSize(startFilePreview.size)}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={clearStartAttachment}
+                                    className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700 transition"
+                                    title="Hapus lampiran"
+                                >
+                                    <X className="size-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        {startFileError && <p className="text-xs font-semibold text-red-600">{startFileError}</p>}
+                        {startForm.errors.attachment && <p className="text-xs font-semibold text-red-600">{startForm.errors.attachment}</p>}
+
                         <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold">Pesan pertama</span>
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="text-sm font-bold">Pesan {startFilePreview ? '(opsional jika ada lampiran)' : ''}</span>
+                                <div className="flex items-center gap-2">
+                                    <ChatEmojiPicker
+                                        onSelect={(emoji) => insertEmojiAtCursor(startTextareaRef, startForm.data.body, emoji, (text) => startForm.setData('body', text))}
+                                        placement="top-right"
+                                    />
+                                    <input
+                                        type="file"
+                                        ref={startFileInputRef}
+                                        onChange={handleStartFileSelect}
+                                        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                                        className="hidden"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => startFileInputRef.current?.click()}
+                                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-blue-600 transition"
+                                    >
+                                        <Paperclip className="size-3.5" /> Lampirkan File
+                                    </button>
+                                </div>
+                            </div>
                             <textarea
+                                ref={startTextareaRef}
                                 value={startForm.data.body}
                                 onChange={(event) => startForm.setData('body', event.target.value)}
-                                rows="5"
+                                rows="4"
                                 maxLength="2000"
                                 placeholder="Tulis pesan untuk customer..."
                                 className="app-field resize-none"
-                                required
                             />
                             {startForm.errors.body && (
                                 <span className="mt-1 block text-xs font-semibold text-red-600">
@@ -325,7 +550,8 @@ export default function ChatIndex({ customers, conversations, activeConversation
                                 Batal
                             </Button>
                             <Button
-                                disabled={startForm.processing || !startForm.data.customer_id || !startForm.data.body.trim()}
+                                type="submit"
+                                disabled={startForm.processing || !startForm.data.customer_id || (!startForm.data.body?.trim() && !startForm.data.attachment)}
                                 className="bg-blue-600 hover:bg-blue-700"
                             >
                                 <Send /> Kirim dan buka chat

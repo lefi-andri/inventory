@@ -41,26 +41,32 @@ class DatabaseSeeder extends Seeder
         $salesRole->syncPermissions(['dashboard.view', 'products.view', 'orders.view', 'orders.update']);
         $customerRole->syncPermissions([]);
 
-        $admin = User::updateOrCreate(['email' => 'admin@stokara.id'], [
-            'name' => 'Admin Stokara',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $admin->syncRoles([$adminRole]);
+        foreach (['admin@tithoshop.id', 'admin@stokara.id'] as $adminEmail) {
+            $admin = User::updateOrCreate(['email' => $adminEmail], [
+                'name' => 'Admin TithoShop',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]);
+            $admin->syncRoles([$adminRole]);
+        }
 
-        $inventoryUser = User::updateOrCreate(['email' => 'gudang@stokara.id'], [
-            'name' => 'Rina Gudang',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $inventoryUser->syncRoles([$inventoryRole]);
+        foreach (['gudang@tithoshop.id', 'gudang@stokara.id'] as $inventoryEmail) {
+            $inventoryUser = User::updateOrCreate(['email' => $inventoryEmail], [
+                'name' => 'Rina Gudang',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]);
+            $inventoryUser->syncRoles([$inventoryRole]);
+        }
 
-        $salesUser = User::updateOrCreate(['email' => 'sales@stokara.id'], [
-            'name' => 'Dimas Sales',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $salesUser->syncRoles([$salesRole]);
+        foreach (['sales@tithoshop.id', 'sales@stokara.id'] as $salesEmail) {
+            $salesUser = User::updateOrCreate(['email' => $salesEmail], [
+                'name' => 'Dimas Sales',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]);
+            $salesUser->syncRoles([$salesRole]);
+        }
 
         $categoryData = [
             ['name' => 'Home Living', 'description' => 'Produk praktis untuk rumah modern.'],
@@ -84,6 +90,7 @@ class DatabaseSeeder extends Seeder
                     'en' => ['name' => 'Sora Aroma Diffuser', 'description' => '300 ml ultrasonic diffuser with gentle ambient lighting.'],
                 ],
                 'price' => 329000,
+                'price_usd' => 21.99,
                 'cost' => 205000,
                 'stock' => 18,
                 'low_stock_threshold' => 5,
@@ -98,6 +105,7 @@ class DatabaseSeeder extends Seeder
                     'en' => ['name' => 'Nami Table Lamp', 'description' => 'Minimalist desk lamp with three adjustable brightness levels.'],
                 ],
                 'price' => 459000,
+                'price_usd' => 29.99,
                 'cost' => 290000,
                 'stock' => 4,
                 'low_stock_threshold' => 5,
@@ -112,6 +120,7 @@ class DatabaseSeeder extends Seeder
                     'en' => ['name' => 'Kiyo 600ml Tumbler', 'description' => 'Insulated stainless steel tumbler for everyday hydration.'],
                 ],
                 'price' => 189000,
+                'price_usd' => 12.50,
                 'cost' => 98000,
                 'stock' => 32,
                 'low_stock_threshold' => 8,
@@ -126,6 +135,7 @@ class DatabaseSeeder extends Seeder
                     'en' => ['name' => 'Raku Portable Speaker', 'description' => 'Compact Bluetooth speaker with 12-hour battery life.'],
                 ],
                 'price' => 649000,
+                'price_usd' => 42.99,
                 'cost' => 410000,
                 'stock' => 3,
                 'low_stock_threshold' => 5,
@@ -140,6 +150,7 @@ class DatabaseSeeder extends Seeder
                     'en' => ['name' => 'Mino Cable Organizer', 'description' => 'Modular desktop organizer for cables and small accessories.'],
                 ],
                 'price' => 79000,
+                'price_usd' => 5.25,
                 'cost' => 35000,
                 'stock' => 45,
                 'low_stock_threshold' => 10,

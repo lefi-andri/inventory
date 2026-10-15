@@ -24,6 +24,9 @@ class AdminChatController extends Controller
                     'chat_messages.conversation_id',
                     'chat_messages.sender_id',
                     'chat_messages.body',
+                    'chat_messages.attachment_path',
+                    'chat_messages.attachment_name',
+                    'chat_messages.attachment_mime',
                     'chat_messages.created_at',
                 ]),
             ])
@@ -65,7 +68,7 @@ class AdminChatController extends Controller
                 'id' => $item->id,
                 'customer' => $item->customer,
                 'status' => $item->status,
-                'last_message' => $item->latestMessage?->body,
+                'last_message' => $item->latestMessage ? ($item->latestMessage->body ?: ($item->latestMessage->attachment_mime === 'application/pdf' ? '📄 [Dokumen PDF]' : '📷 [Gambar]')) : null,
                 'last_message_at' => $item->last_message_at,
                 'unread_count' => $item->unread_count,
             ]),
@@ -78,6 +81,7 @@ class AdminChatController extends Controller
                     'body' => $message->body,
                     'sender_id' => $message->sender_id,
                     'sender_name' => $message->sender->name,
+                    'attachment' => $message->toAttachmentArray(),
                     'read_at' => $message->read_at,
                     'created_at' => $message->created_at,
                 ]),
@@ -89,7 +93,8 @@ class AdminChatController extends Controller
     {
         $data = $request->validate([
             'customer_id' => ['required', 'integer', 'exists:users,id'],
-            'body' => ['required', 'string', 'max:2000'],
+            'body' => ['nullable', 'string', 'max:2000', 'required_without:attachment'],
+            'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,pdf', 'max:10240'],
         ]);
 
         $customer = User::query()
@@ -110,10 +115,21 @@ class AdminChatController extends Controller
                 ['status' => 'open'],
             );
 
-            $conversation->messages()->create([
+            $messagePayload = [
                 'sender_id' => $request->user()->id,
-                'body' => trim($data['body']),
-            ]);
+                'body' => isset($data['body']) && trim($data['body']) !== '' ? trim($data['body']) : null,
+            ];
+
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
+                $path = $file->store('chat-attachments', 'public');
+                $messagePayload['attachment_path'] = $path;
+                $messagePayload['attachment_name'] = $file->getClientOriginalName();
+                $messagePayload['attachment_mime'] = $file->getMimeType();
+                $messagePayload['attachment_size'] = $file->getSize();
+            }
+
+            $conversation->messages()->create($messagePayload);
 
             $conversation->update([
                 'status' => 'open',
@@ -131,14 +147,26 @@ class AdminChatController extends Controller
     public function store(Request $request, ChatConversation $conversation): RedirectResponse
     {
         $data = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
+            'body' => ['nullable', 'string', 'max:2000', 'required_without:attachment'],
+            'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,pdf', 'max:10240'],
         ]);
 
         DB::transaction(function () use ($request, $conversation, $data) {
-            $conversation->messages()->create([
+            $messagePayload = [
                 'sender_id' => $request->user()->id,
-                'body' => trim($data['body']),
-            ]);
+                'body' => isset($data['body']) && trim($data['body']) !== '' ? trim($data['body']) : null,
+            ];
+
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
+                $path = $file->store('chat-attachments', 'public');
+                $messagePayload['attachment_path'] = $path;
+                $messagePayload['attachment_name'] = $file->getClientOriginalName();
+                $messagePayload['attachment_mime'] = $file->getMimeType();
+                $messagePayload['attachment_size'] = $file->getSize();
+            }
+
+            $conversation->messages()->create($messagePayload);
 
             $conversation->update([
                 'status' => 'open',

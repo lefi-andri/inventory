@@ -153,6 +153,7 @@ class ProductController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'translations' => ['nullable'],
             'price' => ['required', 'numeric', 'min:0'],
+            'price_usd' => ['nullable', 'numeric', 'min:0'],
             'cost' => ['required', 'numeric', 'min:0'],
             'stock' => [$product ? 'nullable' : 'required', 'integer', 'min:0'],
             'low_stock_threshold' => ['required', 'integer', 'min:0'],
@@ -185,6 +186,8 @@ class ProductController extends Controller
         }
 
         $data['name'] = $idName;
+        $priceUsd = $data['price_usd'] ?? null;
+        $data['price_usd'] = ($priceUsd !== null && $priceUsd !== '') ? (float) $priceUsd : null;
         $data['description'] = $idDescription !== '' ? $idDescription : null;
         $data['translations'] = [
             'id' => [
@@ -239,6 +242,7 @@ class ProductController extends Controller
             'sku' => $product->sku,
             'description' => $product->localizedDescription(),
             'price' => (float) $product->price,
+            'price_usd' => $product->price_usd !== null ? (float) $product->price_usd : null,
             'cost' => (float) $product->cost,
             'stock' => $product->stock,
             'low_stock_threshold' => $product->low_stock_threshold,

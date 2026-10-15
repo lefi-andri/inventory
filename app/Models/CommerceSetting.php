@@ -8,6 +8,7 @@ class CommerceSetting extends Model
 {
     protected $fillable = [
         'shipping_label',
+        'currency',
         'shipping_cost',
         'free_shipping_threshold',
         'bank_transfer_enabled',
@@ -32,11 +33,22 @@ class CommerceSetting extends Model
     {
         return static::query()->first() ?? new static([
             'shipping_label' => 'Pengiriman reguler',
+            'currency' => 'IDR',
             'shipping_cost' => 25000,
             'free_shipping_threshold' => 500000,
             'bank_transfer_enabled' => true,
             'cod_enabled' => false,
         ]);
+    }
+
+    public function currencySymbol(): string
+    {
+        return $this->currency === 'USD' ? '$' : 'Rp';
+    }
+
+    public function isDollar(): bool
+    {
+        return $this->currency === 'USD';
     }
 
     public function shippingFor(float $subtotal): float

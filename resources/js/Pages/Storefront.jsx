@@ -14,7 +14,8 @@ import axios from 'axios';
 import { ArrowRight, Banknote, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CreditCard, LayoutDashboard, LogIn, LogOut, Menu, MessageCircle, Minus, Package, Plus, ReceiptText, Search, ShieldCheck, ShoppingBag, Trash2, Truck, UserPlus, UserRound, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-const CART_STORAGE_KEY = 'stokara.cart.v1';
+const CART_STORAGE_KEY = 'tithoshop.cart.v1';
+const LEGACY_CART_STORAGE_KEY = 'stokara.cart.v1';
 const DEFAULT_HERO = {
     id: 'default',
     eyebrow: 'Pilihan rumah & gaya hidup',
@@ -133,6 +134,9 @@ export default function Storefront({ products, categories, shippingSettings, pay
         }));
         form.post(route('checkout.store'), {
             onSuccess: () => {
+                if (typeof window !== 'undefined') {
+                    window.localStorage.removeItem(CART_STORAGE_KEY);
+                }
                 setCheckout(false);
                 setCartOpen(false);
                 setCart([]);
@@ -173,7 +177,7 @@ export default function Storefront({ products, categories, shippingSettings, pay
                 <HeroCarousel heroes={heroes} activeIndex={activeHeroIndex} activeHero={activeHero} onChange={setActiveHeroIndex} />
 
                 <section id="produk" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20"><div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between"><div><p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">Katalog</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Temukan pilihanmu</h2></div><div className="relative w-full md:w-72"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari produk..." className="h-11 w-full rounded-xl border-slate-200 bg-white pl-10 pr-4 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500" /></div></div><div className="mt-7 flex gap-2 overflow-x-auto pb-2"><button onClick={() => setCategory('all')} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${category === 'all' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600'}`}>Semua</button>{categories.map((item) => <button key={item.id} onClick={() => setCategory(item.name)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${category === item.name ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600'}`}>{item.name}</button>)}</div>
-                    <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map((product) => <article key={product.id} role="button" tabIndex="0" onClick={() => setSelectedProduct(product)} onKeyDown={(event) => event.key === 'Enter' && setSelectedProduct(product)} className="group cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500"><div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50">{product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="grid h-full place-items-center"><span className="grid size-20 place-items-center rounded-3xl bg-white text-blue-600 shadow-sm"><Package className="size-9" /></span></div>}<span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm backdrop-blur">{product.category}</span></div><div className="p-4"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{product.sku}</p><h3 className="mt-1 text-lg font-extrabold leading-snug">{product.name}</h3><p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-slate-500">{product.description}</p><p className="mt-2 text-xs font-bold text-blue-600">Klik untuk melihat detail</p><div className="mt-4 flex items-end justify-between gap-3"><div><p className="text-lg font-black text-blue-600">{currency(product.price)}</p><p className="text-xs text-slate-500">Stok {product.stock}</p></div><Button onClick={(event) => { event.stopPropagation(); add(product); }} size="icon" className="rounded-xl bg-slate-950 hover:bg-blue-600" aria-label={`Tambah ${product.name}`}><Plus /></Button></div></div></article>)}{!filtered.length && <div className="col-span-full py-20 text-center"><Package className="mx-auto size-10 text-slate-300" /><p className="mt-3 font-bold text-slate-600">Produk tidak ditemukan.</p></div>}</div>
+                    <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map((product) => <article key={product.id} role="button" tabIndex="0" onClick={() => setSelectedProduct(product)} onKeyDown={(event) => event.key === 'Enter' && setSelectedProduct(product)} className="group cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500"><div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50">{product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="grid h-full place-items-center"><span className="grid size-20 place-items-center rounded-3xl bg-white text-blue-600 shadow-sm"><Package className="size-9" /></span></div>}<span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm backdrop-blur">{product.category}</span></div><div className="p-4"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{product.sku}</p><h3 className="mt-1 text-lg font-extrabold leading-snug">{product.name}</h3><p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-slate-500">{product.description}</p><p className="mt-2 text-xs font-bold text-blue-600">Klik untuk melihat detail</p><div className="mt-4 flex items-end justify-between gap-3"><div><div className="flex flex-wrap items-baseline gap-1.5"><p className="text-lg font-black text-blue-600">{currency(product.price)}</p>{product.price_usd && <span className="text-[11px] font-semibold text-slate-400">(≈ {document.documentElement?.dataset?.currency === 'USD' ? currency(product.price_idr, 'IDR') : currency(product.price_usd, 'USD')})</span>}</div><p className="text-xs text-slate-500">Stok {product.stock}</p></div><Button onClick={(event) => { event.stopPropagation(); add(product); }} size="icon" className="rounded-xl bg-slate-950 hover:bg-blue-600" aria-label={`Tambah ${product.name}`}><Plus /></Button></div></div></article>)}{!filtered.length && <div className="col-span-full py-20 text-center"><Package className="mx-auto size-10 text-slate-300" /><p className="mt-3 font-bold text-slate-600">Produk tidak ditemukan.</p></div>}</div>
                 </section>
             </main>
             <StorefrontFooter site={site} />
@@ -445,7 +449,9 @@ function loadCart(products) {
     if (typeof window === 'undefined') return [];
 
     try {
-        const savedItems = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || '[]');
+        const savedItems = JSON.parse(
+            window.localStorage.getItem(CART_STORAGE_KEY) || window.localStorage.getItem(LEGACY_CART_STORAGE_KEY) || '[]',
+        );
         if (!Array.isArray(savedItems)) return [];
 
         return savedItems.flatMap((savedItem) => {

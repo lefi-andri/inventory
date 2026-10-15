@@ -47,7 +47,7 @@ function emailTestOrder(User $customer, string $status = 'new', string $paymentS
             'label' => 'Transfer bank',
             'bank_name' => 'BCA',
             'account_number' => '1234567890',
-            'account_name' => 'PT Stokara',
+            'account_name' => 'PT TithoShop',
             'instructions' => 'Transfer maksimal 24 jam.',
         ],
         'subtotal' => 150000,
@@ -81,7 +81,7 @@ test('customer receives an order confirmation email after checkout', function ()
         'bank_transfer_enabled' => true,
         'bank_name' => 'BCA',
         'bank_account_number' => '1234567890',
-        'bank_account_name' => 'PT Stokara',
+        'bank_account_name' => 'PT TithoShop',
         'payment_instructions' => 'Transfer maksimal 24 jam.',
     ]);
     $emailService = Mockery::mock(OrderEmailService::class);

@@ -56,7 +56,8 @@ test('authenticated customer checkout creates an order and deducts inventory ato
         'items' => [['product_id' => $product->id, 'quantity' => 2]],
     ]);
 
-    $response->assertSessionHasNoErrors();
+    $response->assertSessionHasNoErrors()
+        ->assertRedirect(route('customer.orders.index'));
     expect(Order::count())->toBe(1)
         ->and(Order::first()->user_id)->toBe($customer->id)
         ->and(Order::first()->customer_email)->toBe('budi@example.com')

@@ -5,9 +5,10 @@ import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import LocalizationProvider from './i18n/LocalizationProvider';
+import { setGlobalCurrency } from './lib/format';
 import { applyTheme } from './lib/theme';
 
-const fallbackAppName = import.meta.env.VITE_APP_NAME || 'Stokara';
+const fallbackAppName = import.meta.env.VITE_APP_NAME || 'TithoShop';
 let appName = fallbackAppName;
 
 export function updateFavicon(url) {
@@ -31,6 +32,10 @@ router.on('navigate', (event) => {
     const favicon = event.detail.page.props.site?.favicon;
     if (favicon) {
         updateFavicon(favicon);
+    }
+    const currency = event.detail.page.props.currency || event.detail.page.props.site?.currency;
+    if (currency) {
+        setGlobalCurrency(currency);
     }
 });
 
@@ -56,6 +61,11 @@ createInertiaApp({
         const initialFavicon = props.initialPage.props.site?.favicon;
         if (initialFavicon) {
             updateFavicon(initialFavicon);
+        }
+
+        const initialCurrency = props.initialPage.props.currency || props.initialPage.props.site?.currency;
+        if (initialCurrency) {
+            setGlobalCurrency(initialCurrency);
         }
 
         const root = createRoot(el);

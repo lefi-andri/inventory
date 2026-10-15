@@ -17,7 +17,7 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { currency, shortDate, statusLabel } from '@/lib/format';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, ChevronDown, MessageCircle, Package, ReceiptText, ShoppingBag, Truck, UserRound } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronDown, FileText, MessageCircle, Package, Printer, ReceiptText, ShoppingBag, Truck, UserRound } from 'lucide-react';
 import { useState } from 'react';
 
 const statusTone = (status) => ({
@@ -99,12 +99,40 @@ export default function CustomerOrders({ orders }) {
                             <button type="button" onClick={() => setExpanded(isExpanded ? null : order.id)} className="flex w-full items-center gap-4 p-5 text-left sm:p-6">
                                 <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><ReceiptText className="size-5" /></span>
                                 <span className="min-w-0 flex-1"><span className="block font-extrabold">{order.order_number}</span><span className="mt-1 block text-xs text-slate-500">{shortDate(order.created_at)} · {itemCount} barang</span></span>
-                                <span className="hidden flex-wrap justify-end gap-1.5 sm:flex"><Badge variant="outline" className={statusTone(order.status)}>{statusLabel[order.status]}</Badge><Badge variant="outline" className={statusTone(order.payment_status)}>{statusLabel[order.payment_status]}</Badge></span>
-                                <span className="text-right"><span className="block text-sm font-black">{currency(order.total)}</span><ChevronDown className={`ml-auto mt-1 size-4 text-slate-400 transition ${isExpanded ? 'rotate-180' : ''}`} /></span>
+                                <span className="hidden flex-wrap items-center justify-end gap-2 sm:flex">
+                                    <Badge variant="outline" className={statusTone(order.status)}>{statusLabel[order.status]}</Badge>
+                                    <Badge variant="outline" className={statusTone(order.payment_status)}>{statusLabel[order.payment_status]}</Badge>
+                                    <a
+                                        href={route('orders.invoice', order.id)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs hover:border-blue-300 hover:bg-blue-50/80 hover:text-blue-700 transition"
+                                        title="Buka dan cetak invoice resmi"
+                                    >
+                                        <FileText className="size-3.5 text-blue-600" />
+                                        Invoice
+                                    </a>
+                                </span>
+                                <span className="text-right"><span className="block text-sm font-black">{currency(order.total, order.currency)}</span><ChevronDown className={`ml-auto mt-1 size-4 text-slate-400 transition ${isExpanded ? 'rotate-180' : ''}`} /></span>
                             </button>
 
                             {isExpanded && <div className="border-t border-slate-100 px-5 py-5 sm:px-6">
-                                <div className="mb-4 flex flex-wrap gap-1.5 sm:hidden"><Badge variant="outline" className={statusTone(order.status)}>{statusLabel[order.status]}</Badge><Badge variant="outline" className={statusTone(order.payment_status)}>{statusLabel[order.payment_status]}</Badge></div>
+                                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:hidden">
+                                    <div className="flex flex-wrap gap-1.5">
+                                        <Badge variant="outline" className={statusTone(order.status)}>{statusLabel[order.status]}</Badge>
+                                        <Badge variant="outline" className={statusTone(order.payment_status)}>{statusLabel[order.payment_status]}</Badge>
+                                    </div>
+                                    <a
+                                        href={route('orders.invoice', order.id)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                                    >
+                                        <FileText className="size-3.5 text-blue-600" />
+                                        Invoice
+                                    </a>
+                                </div>
                                 <div className="space-y-3">{order.items.map((item) => {
                                     const historicalProduct = {
                                         ...(item.product || {}),
@@ -134,17 +162,17 @@ export default function CustomerOrders({ orders }) {
                                             <span className="min-w-0 flex-1">
                                                 <span className="block truncate text-sm font-bold">{item.product_name}</span>
                                                 <span className="mt-1 block text-xs text-slate-500">
-                                                    {item.sku} · {item.quantity} × {currency(item.price)}
+                                                    {item.sku} · {item.quantity} × {currency(item.price, order.currency)}
                                                 </span>
                                                 <span className="mt-1 block text-xs font-bold text-blue-600">Lihat detail barang</span>
                                             </span>
-                                            <span className="text-sm font-black">{currency(item.subtotal)}</span>
+                                            <span className="text-sm font-black">{currency(item.subtotal, order.currency)}</span>
                                         </button>
                                     );
                                 })}</div>
                                 <div className="mt-5 grid gap-4 rounded-xl bg-slate-50 p-4 text-sm md:grid-cols-[1fr_auto]">
                                     <div><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Dikirim ke</p><p className="mt-1 font-semibold text-slate-800">{order.shipping_address}</p><p className="mt-1 text-xs text-slate-500">{order.shipping_method || 'Pengiriman reguler'}</p>{order.notes && <p className="mt-2 text-slate-500">Catatan: {order.notes}</p>}</div>
-                                    <div className="min-w-52 space-y-1.5"><TotalRow label="Subtotal" value={order.subtotal} />{order.discount_amount > 0 && <div className="flex justify-between gap-6 font-semibold text-emerald-700"><span>Diskon {order.promotion_code}</span><span>-{currency(order.discount_amount)}</span></div>}<TotalRow label={order.shipping_method || 'Pengiriman'} value={order.shipping_cost} freeLabel /><div className="flex justify-between gap-6 border-t border-slate-200 pt-2 font-black"><span>Total</span><span>{currency(order.total)}</span></div></div>
+                                    <div className="min-w-52 space-y-1.5"><TotalRow label="Subtotal" value={order.subtotal} customCurrency={order.currency} />{order.discount_amount > 0 && <div className="flex justify-between gap-6 font-semibold text-emerald-700"><span>Diskon {order.promotion_code}</span><span>-{currency(order.discount_amount, order.currency)}</span></div>}<TotalRow label={order.shipping_method || 'Pengiriman'} value={order.shipping_cost} customCurrency={order.currency} freeLabel /><div className="flex justify-between gap-6 border-t border-slate-200 pt-2 font-black"><span>Total</span><span>{currency(order.total, order.currency)}</span></div></div>
                                 </div>
                                 <PaymentInformation order={order} />
 
@@ -154,6 +182,21 @@ export default function CustomerOrders({ orders }) {
                                 </div>}
 
                                 {order.status === 'completed' && order.received_at && <p className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"><CheckCircle2 className="size-4" /> Barang diterima pada {shortDate(order.received_at)}</p>}
+
+                                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                                    <a
+                                        href={route('orders.invoice', order.id)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-extrabold text-slate-800 shadow-xs hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition"
+                                    >
+                                        <Printer className="size-4 text-blue-600" />
+                                        Cetak & Unduh Invoice Resmi
+                                    </a>
+                                    <span className="text-xs text-slate-400">
+                                        Dokumen Transaksi Sah #{order.order_number}
+                                    </span>
+                                </div>
                             </div>}
                         </article>;
                     })}
@@ -186,8 +229,8 @@ function Summary({ label, value, icon: Icon }) {
     return <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon className="size-5" /></span><div className="min-w-0"><p className="text-sm font-semibold text-slate-500">{label}</p><p className="mt-1 truncate text-xl font-black">{value}</p></div></div>;
 }
 
-function TotalRow({ label, value, freeLabel = false }) {
-    return <div className="flex justify-between gap-6 text-slate-600"><span>{label}</span><span>{freeLabel && !Number(value) ? 'Gratis' : currency(value)}</span></div>;
+function TotalRow({ label, value, freeLabel = false, customCurrency }) {
+    return <div className="flex justify-between gap-6 text-slate-600"><span>{label}</span><span>{freeLabel && !Number(value) ? 'Gratis' : currency(value, customCurrency)}</span></div>;
 }
 
 function PaymentInformation({ order }) {

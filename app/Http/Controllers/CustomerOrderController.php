@@ -40,6 +40,7 @@ class CustomerOrderController extends Controller
                     'promotion_kind',
                     'notes',
                 ),
+                'currency' => $order->currency ?: 'IDR',
                 'subtotal' => (float) $order->subtotal,
                 'discount_amount' => (float) $order->discount_amount,
                 'shipping_cost' => (float) $order->shipping_cost,

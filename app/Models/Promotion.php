@@ -19,7 +19,13 @@ class Promotion extends Model
         if ($this->starts_at && now()->lt($this->starts_at)) return 'Kode promo belum dapat digunakan.';
         if ($this->ends_at && now()->gt($this->ends_at)) return 'Masa berlaku kode promo telah berakhir.';
         if ($this->usage_limit !== null && $this->used_count >= $this->usage_limit) return 'Kuota penggunaan kode promo telah habis.';
-        if ($subtotal < (float) $this->min_order) return 'Minimum belanja untuk kode ini adalah Rp'.number_format((float) $this->min_order, 0, ',', '.').'.';
+        if ($subtotal < (float) $this->min_order) {
+            $isDollar = (CommerceSetting::current()->currency ?? 'IDR') === 'USD';
+            $formattedMin = $isDollar
+                ? '$'.number_format((float) $this->min_order, 2)
+                : 'Rp'.number_format((float) $this->min_order, 0, ',', '.');
+            return "Minimum belanja untuk kode ini adalah {$formattedMin}.";
+        }
 
         return null;
     }

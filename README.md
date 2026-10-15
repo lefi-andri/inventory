@@ -1,4 +1,4 @@
-# 📦 Stokara - Sistem Manajemen Inventaris & E-Commerce
+# 📦 TithoShop - Sistem Manajemen Inventaris & E-Commerce
 
 Aplikasi web modern berbasis **Laravel 13**, **Inertia.js (React)**, dan **Tailwind CSS** untuk mengelola inventaris gudang, katalog produk, pesanan, promosi, hingga live chat interaktif antara pelanggan dan admin toko.
 
@@ -42,9 +42,9 @@ Sistem telah dilengkapi dengan akun bawaan (*default seeder*) yang dapat digunak
 
 | Role | Nama Pengguna | Email Login | Password | Akses & Tanggung Jawab |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | Admin Stokara | `admin@stokara.id` | `password` | **Akses Penuh**: Seluruh modul sistem (Dashboard, Produk, Stok, Pesanan, User, Banner, Promosi, Ongkir, Pembayaran, Pengaturan Toko, dan Admin Live Chat). |
-| **Inventory Manager** | Rina Gudang | `gudang@stokara.id` | `password` | **Gudang & Inventaris**: Manajemen stok, mutasi/penyesuaian stok (*adjust movements*), katalog produk, dan monitoring pesanan. |
-| **Sales** | Dimas Sales | `sales@stokara.id` | `password` | **Penjualan**: Memantau dashboard, melihat ketersediaan produk, serta memperbarui status pesanan pelanggan (*orders*). |
+| **Admin** | Admin TithoShop | `admin@tithoshop.id` | `password` | **Akses Penuh**: Seluruh modul sistem (Dashboard, Produk, Stok, Pesanan, User, Banner, Promosi, Ongkir, Pembayaran, Pengaturan Toko, dan Admin Live Chat). |
+| **Inventory Manager** | Rina Gudang | `gudang@tithoshop.id` | `password` | **Gudang & Inventaris**: Manajemen stok, mutasi/penyesuaian stok (*adjust movements*), katalog produk, dan monitoring pesanan. |
+| **Sales** | Dimas Sales | `sales@tithoshop.id` | `password` | **Penjualan**: Memantau dashboard, melihat ketersediaan produk, serta memperbarui status pesanan pelanggan (*orders*). |
 | **Customer** | Pelanggan Toko | *(Daftar via Register)* | *(Sesuai registrasi)* | **Belanja & Akun Pribadi**: Akses storefront belanja, checkout pesanan, melihat riwayat pesanan (`/my-orders`), konfirmasi terima barang, dan live chat (`/chat`). |
 
 > [!TIP]
@@ -83,7 +83,7 @@ cp .env.example .env
 ```
 Buka file `.env` dan sesuaikan konfigurasi koneksi database Anda, contohnya:
 ```env
-APP_NAME=Stokara
+APP_NAME=TithoShop
 APP_URL=http://localhost:8000
 
 DB_CONNECTION=mariadb
@@ -150,7 +150,7 @@ Buka peramban (*browser*) dan arahkan ke:
 
 ## 📖 Alur Penggunaan Aplikasi
 
-1. **Sebagai Administrator (`admin@stokara.id` / `password`)**:
+1. **Sebagai Administrator (`admin@tithoshop.id` / `password`)**:
    - Masuk melalui `/login`.
    - Mengakses Dashboard utama untuk melihat analitik penjualan dan stok menipis.
    - Mengelola master produk, kategori, dan batas stok minimum pada menu **Produk**.
@@ -158,12 +158,12 @@ Buka peramban (*browser*) dan arahkan ke:
    - Menata tampilan toko melalui menu **Site Settings**, **Hero Banners**, serta mengatur kupon diskon di menu **Promotions**.
    - Membalas chat pelanggan pada menu **Live Chats**.
 
-2. **Sebagai Staf Gudang / Inventory Manager (`gudang@stokara.id` / `password`)**:
+2. **Sebagai Staf Gudang / Inventory Manager (`gudang@tithoshop.id` / `password`)**:
    - Masuk melalui `/login`.
    - Memantau persediaan barang di menu **Inventory**.
    - Melakukan penyesuaian stok (*Stock Adjustment*) ketika barang masuk dari supplier atau barang rusak/hilang.
 
-3. **Sebagai Tim Sales (`sales@stokara.id` / `password`)**:
+3. **Sebagai Tim Sales (`sales@tithoshop.id` / `password`)**:
    - Masuk melalui `/login`.
    - Memantau daftar pesanan baru di menu **Orders**.
    - Memperbarui status pesanan dari *processing* menjadi *completed* atau status terkait lainnya.
