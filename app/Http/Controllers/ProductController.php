@@ -82,9 +82,12 @@ class ProductController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         if ($product->movements()->exists()) {
-            $product->update(['is_active' => false]);
+            $product->update([
+                'is_active' => false,
+                'is_discontinued' => true,
+            ]);
 
-            return back()->with('success', 'Produk dinonaktifkan karena sudah memiliki riwayat stok.');
+            return back()->with('success', 'Produk ditandai discontinue karena sudah memiliki riwayat stok.');
         }
 
         $product->delete();
@@ -104,6 +107,7 @@ class ProductController extends Controller
             'stock' => [$product ? 'nullable' : 'required', 'integer', 'min:0'],
             'low_stock_threshold' => ['required', 'integer', 'min:0'],
             'is_active' => ['required', 'boolean'],
+            'is_discontinued' => ['sometimes', 'boolean'],
             'images' => ['nullable', 'array', 'max:4'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
@@ -136,6 +140,7 @@ class ProductController extends Controller
             'stock' => $product->stock,
             'low_stock_threshold' => $product->low_stock_threshold,
             'is_active' => $product->is_active,
+            'is_discontinued' => $product->is_discontinued,
             'image' => $product->getFirstMediaUrl('products') ?: null,
             'images_count' => $product->media->count(),
         ];

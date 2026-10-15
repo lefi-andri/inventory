@@ -22,6 +22,7 @@ test('checkout applies voucher and manually configured shipping cost', function 
 
     $this->actingAs($customer)->post(route('checkout.store'), [
         'promotion_code' => 'hemat10',
+        'payment_method' => 'bank_transfer',
         'items' => [['product_id' => $product->id, 'quantity' => 2]],
     ])->assertSessionHasNoErrors();
 
@@ -40,6 +41,7 @@ test('free shipping threshold follows admin setting', function () {
     CommerceSetting::create(['shipping_cost' => 30000, 'free_shipping_threshold' => 200000]);
 
     $this->actingAs($customer)->post(route('checkout.store'), [
+        'payment_method' => 'bank_transfer',
         'items' => [['product_id' => $product->id, 'quantity' => 1]],
     ])->assertSessionHasNoErrors();
 
@@ -53,6 +55,7 @@ test('invalid or expired promotion is rejected without deducting stock', functio
 
     $this->actingAs($customer)->post(route('checkout.store'), [
         'promotion_code' => 'EXPIRED',
+        'payment_method' => 'bank_transfer',
         'items' => [['product_id' => $product->id, 'quantity' => 1]],
     ])->assertSessionHasErrors('promotion_code');
 
@@ -81,9 +84,62 @@ test('admin can manage promotions and shipping settings', function () {
     ])->assertSessionHasNoErrors();
 
     $this->actingAs($admin)->patch(route('admin.shipping-settings.update'), [
-        'shipping_cost' => 22000, 'free_shipping_threshold' => 450000,
+        'shipping_label' => 'Kurir reguler', 'shipping_cost' => 22000, 'free_shipping_threshold' => 450000,
+    ])->assertSessionHasNoErrors();
+
+    $this->actingAs($admin)->patch(route('admin.payment-settings.update'), [
+        'bank_transfer_enabled' => true,
+        'bank_name' => 'BCA',
+        'bank_account_number' => '1234567890',
+        'bank_account_name' => 'PT Stokara Indonesia',
+        'cod_enabled' => true,
+        'payment_instructions' => 'Cantumkan nomor pesanan pada berita transfer.',
     ])->assertSessionHasNoErrors();
 
     expect(Promotion::where('code', 'NEWCODE')->exists())->toBeTrue()
-        ->and((float) CommerceSetting::current()->shipping_cost)->toBe(22000.0);
+        ->and((float) CommerceSetting::current()->shipping_cost)->toBe(22000.0)
+        ->and(CommerceSetting::current()->shipping_label)->toBe('Kurir reguler')
+        ->and(CommerceSetting::current()->bank_name)->toBe('BCA')
+        ->and(CommerceSetting::current()->cod_enabled)->toBeTrue();
+});
+
+test('checkout stores shipping and payment snapshots for customer and admin', function () {
+    $product = promotionProduct();
+    $customer = User::factory()->create(['phone' => '08123', 'shipping_address' => 'Alamat test']);
+    CommerceSetting::create([
+        'shipping_label' => 'Kurir toko',
+        'shipping_cost' => 15000,
+        'free_shipping_threshold' => null,
+        'bank_transfer_enabled' => true,
+        'bank_name' => 'Mandiri',
+        'bank_account_number' => '9876543210',
+        'bank_account_name' => 'Toko Stokara',
+        'cod_enabled' => false,
+        'payment_instructions' => 'Transfer maksimal 24 jam.',
+    ]);
+
+    $this->actingAs($customer)->post(route('checkout.store'), [
+        'payment_method' => 'bank_transfer',
+        'items' => [['product_id' => $product->id, 'quantity' => 1]],
+    ])->assertSessionHasNoErrors();
+
+    $order = Order::sole();
+    expect($order->shipping_method)->toBe('Kurir toko')
+        ->and($order->payment_method)->toBe('bank_transfer')
+        ->and($order->payment_details['bank_name'])->toBe('Mandiri')
+        ->and($order->payment_details['account_number'])->toBe('9876543210')
+        ->and($order->payment_details['instructions'])->toBe('Transfer maksimal 24 jam.');
+});
+
+test('checkout rejects a disabled payment method without changing stock', function () {
+    $product = promotionProduct();
+    $customer = User::factory()->create(['phone' => '08123', 'shipping_address' => 'Alamat test']);
+    CommerceSetting::create(['bank_transfer_enabled' => true, 'cod_enabled' => false]);
+
+    $this->actingAs($customer)->post(route('checkout.store'), [
+        'payment_method' => 'cod',
+        'items' => [['product_id' => $product->id, 'quantity' => 1]],
+    ])->assertSessionHasErrors('payment_method');
+
+    expect(Order::count())->toBe(0)->and($product->refresh()->stock)->toBe(10);
 });

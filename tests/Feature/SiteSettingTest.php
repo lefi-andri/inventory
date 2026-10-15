@@ -64,6 +64,30 @@ test('site settings are globally shared with inertia pages', function () {
         ->assertInertia(fn (Assert $page) => $page->where('site.brand_name', 'Brand Global'));
 });
 
+test('admin can save site settings when multipart form omits empty link arrays', function () {
+    $settings = SiteSetting::current();
+    $settings->update([
+        'footer_links' => [['label' => 'Lama', 'url' => '/lama', 'is_active' => true]],
+    ]);
+
+    $this->actingAs(siteSettingsAdmin())->post(route('admin.site-settings.update'), [
+        '_method' => 'patch',
+        'brand_name' => 'Brand Tersimpan',
+        'remove_logo' => '0',
+        'footer_description' => 'Deskripsi baru',
+        'footer_copyright' => 'Hak cipta baru',
+        // FormData omits navbar_links and footer_links when both arrays are empty.
+    ])->assertSessionHasNoErrors()
+        ->assertSessionHas('success');
+
+    $settings->refresh();
+
+    expect($settings->brand_name)->toBe('Brand Tersimpan')
+        ->and($settings->navbar_links)->toBe([])
+        ->and($settings->footer_links)->toBe([])
+        ->and($settings->footer_description)->toBe('Deskripsi baru');
+});
+
 test('non admin cannot manage site settings', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('admin.site-settings.edit'))

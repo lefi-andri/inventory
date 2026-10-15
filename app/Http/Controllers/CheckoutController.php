@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Services\InventoryService;
+use App\Services\OrderEmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,10 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
+    public function __construct(private readonly OrderEmailService $orderEmail)
+    {
+    }
+
     public function store(Request $request, InventoryService $inventory): RedirectResponse
     {
         $customer = $request->user();
@@ -37,6 +42,7 @@ class CheckoutController extends Controller
             'shipping_address' => ['required', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'promotion_code' => ['nullable', 'string', 'max:50'],
+            'payment_method' => ['required', 'string', 'max:30'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
@@ -51,6 +57,12 @@ class CheckoutController extends Controller
 
             foreach ($items as $item) {
                 $product = Product::query()->lockForUpdate()->findOrFail($item['product_id']);
+                if ($product->is_discontinued) {
+                    throw ValidationException::withMessages([
+                        'items' => "Produk {$product->name} sudah discontinue dan tidak dapat dipesan.",
+                    ]);
+                }
+
                 if (! $product->is_active || $product->stock < $item['quantity']) {
                     throw ValidationException::withMessages([
                         'items' => "Stok {$product->name} tidak mencukupi.",
@@ -71,7 +83,17 @@ class CheckoutController extends Controller
                 $discountAmount = $promotion->discountFor($subtotal);
             }
 
-            $shippingCost = CommerceSetting::current()->shippingFor($subtotal);
+            $commerceSettings = CommerceSetting::current();
+            $paymentMethod = collect($commerceSettings->availablePaymentMethods())
+                ->firstWhere('value', $data['payment_method']);
+
+            if (! $paymentMethod) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Metode pembayaran tidak tersedia.',
+                ]);
+            }
+
+            $shippingCost = $commerceSettings->shippingFor($subtotal);
             $order = Order::create([
                 ...collect($data)->except(['items', 'promotion_code'])->all(),
                 'user_id' => $customer->id,
@@ -81,6 +103,12 @@ class CheckoutController extends Controller
                 'promotion_id' => $promotion?->id,
                 'promotion_code' => $promotion?->code,
                 'promotion_kind' => $promotion?->kind,
+                'shipping_method' => $commerceSettings->shipping_label,
+                'payment_method' => $paymentMethod['value'],
+                'payment_details' => [
+                    'label' => $paymentMethod['label'],
+                    ...$paymentMethod['details'],
+                ],
                 'subtotal' => $subtotal,
                 'discount_amount' => $discountAmount,
                 'shipping_cost' => $shippingCost,
@@ -115,7 +143,9 @@ class CheckoutController extends Controller
             return $order;
         });
 
-        return back()->with('success', "Pesanan {$order->order_number} berhasil dibuat.");
+        $this->orderEmail->created($order);
+
+        return back()->with('success', "Pesanan {$order->order_number} berhasil dibuat. Email konfirmasi sedang dikirim.");
     }
 
     public function validatePromotion(Request $request): JsonResponse
@@ -128,7 +158,13 @@ class CheckoutController extends Controller
         ]);
 
         $subtotal = collect($data['items'])->sum(function ($item) {
-            $product = Product::query()->where('is_active', true)->findOrFail($item['product_id']);
+            $product = Product::query()->visibleToCustomers()->find($item['product_id']);
+            if (! $product) {
+                throw ValidationException::withMessages([
+                    'items' => 'Salah satu produk sudah tidak tersedia.',
+                ]);
+            }
+
             return (float) $product->price * $item['quantity'];
         });
         $promotion = Promotion::query()->where('code', strtoupper(trim($data['promotion_code'])))->first();

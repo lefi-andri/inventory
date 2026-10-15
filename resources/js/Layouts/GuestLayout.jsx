@@ -1,4 +1,5 @@
 import BrandLogo from '@/Components/BrandLogo';
+import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import { Link, usePage } from '@inertiajs/react';
 
 export default function GuestLayout({ children }) {
@@ -6,6 +7,7 @@ export default function GuestLayout({ children }) {
 
     return (
         <div className="flex min-h-screen flex-col items-center bg-slate-100 px-4 pt-6 sm:justify-center sm:pt-0">
+            <LanguageSwitcher className="absolute right-4 top-4" />
             <div>
                 <Link href={route('storefront')} className="flex flex-col items-center gap-3">
                     <BrandLogo className="size-20 rounded-3xl shadow-lg" iconClassName="size-9" imageClassName="p-2" />

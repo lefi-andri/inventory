@@ -2,8 +2,9 @@ import { Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { CheckCheck, ChevronDown, Headphones, LoaderCircle, Maximize2, MessageCircle, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { activeLocale } from '@/lib/format';
 
-const messageTime = (value) => new Intl.DateTimeFormat('id-ID', {
+const messageTime = (value) => new Intl.DateTimeFormat(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
 }).format(new Date(value));

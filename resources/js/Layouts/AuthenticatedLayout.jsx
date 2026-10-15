@@ -1,4 +1,5 @@
 import BrandLogo from '@/Components/BrandLogo';
+import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import ProfileCompletionNotice from '@/Components/ProfileCompletionNotice';
 import { Link, router, usePage } from '@inertiajs/react';
 import {
@@ -15,7 +16,7 @@ const navItems = [
     { label: 'Tampilan Situs', route: 'admin.site-settings.edit', icon: Palette, role: 'admin' },
     { label: 'Hero Banner', route: 'admin.hero-banners.index', icon: Images, role: 'admin' },
     { label: 'Chat Customer', route: 'admin.chats.index', icon: MessageCircle, role: 'admin' },
-    { label: 'Promo & Ongkir', route: 'admin.promotions.index', icon: TicketPercent, role: 'admin' },
+    { label: 'Promo, Ongkir & Bayar', route: 'admin.promotions.index', icon: TicketPercent, role: 'admin' },
     { label: 'Tim & Role', route: 'users.index', icon: UserRoundCog, permission: 'users.view' },
 ];
 
@@ -77,6 +78,7 @@ export default function AuthenticatedLayout({ title, eyebrow, action, children }
                             <h1 className="truncate text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>
                         </div>
                         {action}
+                        <LanguageSwitcher compact className="hidden sm:inline-flex" />
                         <div className="relative">
                             <button onClick={() => setUserMenu(!userMenu)} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 text-left shadow-sm">
                                 <span className="grid size-9 place-items-center rounded-lg bg-blue-600 text-sm font-extrabold text-white">{auth.user.name.slice(0, 2).toUpperCase()}</span>

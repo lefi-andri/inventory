@@ -7,6 +7,7 @@ use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HeroBannerController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PromotionController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'index'])->name('storefront');
+Route::post('/locale', LocaleController::class)->name('locale.update');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'permission:dashboard.view'])->name('dashboard');
@@ -57,6 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/hero-banners/{heroBanner}', [HeroBannerController::class, 'update'])->name('hero-banners.update');
         Route::delete('/hero-banners/{heroBanner}', [HeroBannerController::class, 'destroy'])->name('hero-banners.destroy');
         Route::get('/chats/{conversation?}', [AdminChatController::class, 'index'])->name('chats.index');
+        Route::post('/chats', [AdminChatController::class, 'start'])->name('chats.store');
         Route::post('/chats/{conversation}/messages', [AdminChatController::class, 'store'])->name('chats.messages.store');
         Route::patch('/chats/{conversation}/status', [AdminChatController::class, 'updateStatus'])->name('chats.status.update');
         Route::get('/promotions', [PromotionController::class, 'index'])->name('promotions.index');
@@ -64,6 +67,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/promotions/{promotion}', [PromotionController::class, 'update'])->name('promotions.update');
         Route::delete('/promotions/{promotion}', [PromotionController::class, 'destroy'])->name('promotions.destroy');
         Route::patch('/shipping-settings', [PromotionController::class, 'updateShipping'])->name('shipping-settings.update');
+        Route::patch('/payment-settings', [PromotionController::class, 'updatePayment'])->name('payment-settings.update');
     });
 });
 

@@ -1,5 +1,6 @@
 import BrandLogo from '@/Components/BrandLogo';
 import FloatingChatWidget from '@/Components/FloatingChatWidget';
+import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import ProductDetailDialog from '@/Components/ProductDetailDialog';
 import ProfileCompletionNotice from '@/Components/ProfileCompletionNotice';
 import {
@@ -68,6 +69,7 @@ export default function CustomerOrders({ orders }) {
                         <span className="max-w-40 truncate text-xl font-black tracking-tight">{site.brand_name}</span>
                     </Link>
                     <div className="ml-auto flex items-center gap-2">
+                        <LanguageSwitcher compact />
                         <Link href={route('customer.chat.index')} className="flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-700"><MessageCircle className="size-4" /><span className="hidden sm:inline">Chat</span></Link>
                         <Link href={route('profile.edit')} className="flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-700"><UserRound className="size-4" /><span className="hidden sm:inline">Profil</span></Link>
                         <button type="button" onClick={() => router.post(route('logout'))} className="rounded-xl px-3 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100">Keluar</button>
@@ -109,9 +111,10 @@ export default function CustomerOrders({ orders }) {
                                     <span className="text-sm font-black">{currency(item.subtotal)}</span>
                                 </button>)}</div>
                                 <div className="mt-5 grid gap-4 rounded-xl bg-slate-50 p-4 text-sm md:grid-cols-[1fr_auto]">
-                                    <div><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Dikirim ke</p><p className="mt-1 font-semibold text-slate-800">{order.shipping_address}</p>{order.notes && <p className="mt-2 text-slate-500">Catatan: {order.notes}</p>}</div>
-                                    <div className="min-w-52 space-y-1.5"><TotalRow label="Subtotal" value={order.subtotal} />{order.discount_amount > 0 && <div className="flex justify-between gap-6 font-semibold text-emerald-700"><span>Diskon {order.promotion_code}</span><span>-{currency(order.discount_amount)}</span></div>}<TotalRow label="Pengiriman" value={order.shipping_cost} /><div className="flex justify-between gap-6 border-t border-slate-200 pt-2 font-black"><span>Total</span><span>{currency(order.total)}</span></div></div>
+                                    <div><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Dikirim ke</p><p className="mt-1 font-semibold text-slate-800">{order.shipping_address}</p><p className="mt-1 text-xs text-slate-500">{order.shipping_method || 'Pengiriman reguler'}</p>{order.notes && <p className="mt-2 text-slate-500">Catatan: {order.notes}</p>}</div>
+                                    <div className="min-w-52 space-y-1.5"><TotalRow label="Subtotal" value={order.subtotal} />{order.discount_amount > 0 && <div className="flex justify-between gap-6 font-semibold text-emerald-700"><span>Diskon {order.promotion_code}</span><span>-{currency(order.discount_amount)}</span></div>}<TotalRow label={order.shipping_method || 'Pengiriman'} value={order.shipping_cost} freeLabel /><div className="flex justify-between gap-6 border-t border-slate-200 pt-2 font-black"><span>Total</span><span>{currency(order.total)}</span></div></div>
                                 </div>
+                                <PaymentInformation order={order} />
 
                                 {order.status === 'shipped' && <div className="mt-4 flex flex-col gap-4 rounded-xl border border-cyan-200 bg-cyan-50 p-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-cyan-700 shadow-sm"><Truck className="size-5" /></span><div><p className="font-extrabold text-cyan-950">Pesanan sedang dikirim</p><p className="mt-1 text-sm text-cyan-800">Konfirmasikan setelah seluruh barang sudah Anda terima.</p></div></div>
@@ -151,6 +154,17 @@ function Summary({ label, value, icon: Icon }) {
     return <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon className="size-5" /></span><div className="min-w-0"><p className="text-sm font-semibold text-slate-500">{label}</p><p className="mt-1 truncate text-xl font-black">{value}</p></div></div>;
 }
 
-function TotalRow({ label, value }) {
-    return <div className="flex justify-between gap-6 text-slate-600"><span>{label}</span><span>{currency(value)}</span></div>;
+function TotalRow({ label, value, freeLabel = false }) {
+    return <div className="flex justify-between gap-6 text-slate-600"><span>{label}</span><span>{freeLabel && !Number(value) ? 'Gratis' : currency(value)}</span></div>;
+}
+
+function PaymentInformation({ order }) {
+    const details = order.payment_details || {};
+    return <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
+        <p className="text-xs font-bold uppercase tracking-wider text-blue-600">Informasi pembayaran</p>
+        <p className="mt-1 font-extrabold text-blue-950">{details.label || (order.payment_method === 'cod' ? 'Bayar di tempat (COD)' : order.payment_method === 'bank_transfer' ? 'Transfer bank' : 'Belum tercatat')}</p>
+        {details.bank_name && <div className="mt-2 text-blue-900"><p>{details.bank_name} · <strong>{details.account_number}</strong></p><p className="text-xs">Atas nama {details.account_name}</p></div>}
+        {details.instructions && <p className="mt-2 whitespace-pre-line text-xs leading-5 text-blue-800">{details.instructions}</p>}
+        {order.payment_status === 'pending' && order.payment_method === 'bank_transfer' && <p className="mt-3 font-semibold text-amber-700">Selesaikan pembayaran agar pesanan dapat segera diproses.</p>}
+    </div>;
 }

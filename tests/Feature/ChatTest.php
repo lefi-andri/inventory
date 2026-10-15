@@ -113,6 +113,82 @@ test('admin can view customer conversations and reply', function () {
     ]);
 });
 
+test('admin can start a chat with a registered customer', function () {
+    $customer = chatUser('customer');
+    $admin = chatUser('admin');
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.chats.store'), [
+            'customer_id' => $customer->id,
+            'body' => 'Halo, kami ingin menginformasikan status pesanan Anda.',
+        ])
+        ->assertSessionHasNoErrors();
+
+    $conversation = ChatConversation::where('customer_id', $customer->id)->firstOrFail();
+
+    $response->assertRedirect(route('admin.chats.index', $conversation));
+    expect($conversation->status)->toBe('open')
+        ->and($conversation->last_message_at)->not->toBeNull();
+
+    $this->assertDatabaseHas('chat_messages', [
+        'conversation_id' => $conversation->id,
+        'sender_id' => $admin->id,
+        'body' => 'Halo, kami ingin menginformasikan status pesanan Anda.',
+    ]);
+});
+
+test('admin starting a chat again reuses and reopens the customer conversation', function () {
+    $customer = chatUser('customer');
+    $admin = chatUser('admin');
+    $conversation = ChatConversation::create([
+        'customer_id' => $customer->id,
+        'status' => 'closed',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.chats.store'), [
+            'customer_id' => $customer->id,
+            'body' => 'Ada informasi baru untuk Anda.',
+        ])
+        ->assertRedirect(route('admin.chats.index', $conversation))
+        ->assertSessionHasNoErrors();
+
+    expect(ChatConversation::where('customer_id', $customer->id)->count())->toBe(1)
+        ->and($conversation->refresh()->status)->toBe('open')
+        ->and($conversation->messages()->count())->toBe(1);
+});
+
+test('admin cannot start a chat with a user who is not a customer', function () {
+    $admin = chatUser('admin');
+    $otherAdmin = chatUser('admin');
+
+    $this->actingAs($admin)
+        ->from(route('admin.chats.index'))
+        ->post(route('admin.chats.store'), [
+            'customer_id' => $otherAdmin->id,
+            'body' => 'Pesan yang tidak valid.',
+        ])
+        ->assertRedirect(route('admin.chats.index'))
+        ->assertSessionHasErrors('customer_id');
+
+    expect(ChatConversation::count())->toBe(0);
+});
+
+test('admin chat inbox lists registered customers for a new chat', function () {
+    $customer = chatUser('customer');
+    $admin = chatUser('admin');
+
+    $this->actingAs($admin)
+        ->get(route('admin.chats.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Chats/Index')
+            ->has('customers', 1)
+            ->where('customers.0.id', $customer->id)
+            ->where('customers.0.email', $customer->email)
+            ->where('customers.0.conversation_id', null));
+});
+
 test('only admins can access the admin chat inbox', function () {
     $customer = chatUser('customer');
 

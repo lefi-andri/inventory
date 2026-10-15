@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Services\InventoryService;
+use App\Services\OrderEmailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class OrderController extends Controller
     {
         return Inertia::render('Orders/Index', [
             'orders' => Order::with('items')->latest()->get()->map(fn ($order) => [
-                ...$order->only('id', 'order_number', 'customer_name', 'customer_email', 'customer_phone', 'shipping_address', 'status', 'payment_status', 'promotion_code', 'promotion_kind', 'notes'),
+                ...$order->only('id', 'order_number', 'customer_name', 'customer_email', 'customer_phone', 'shipping_address', 'shipping_method', 'status', 'payment_status', 'payment_method', 'payment_details', 'promotion_code', 'promotion_kind', 'notes'),
                 'subtotal' => (float) $order->subtotal,
                 'discount_amount' => (float) $order->discount_amount,
                 'shipping_cost' => (float) $order->shipping_cost,
@@ -40,13 +41,13 @@ class OrderController extends Controller
         ]);
     }
 
-    public function update(Request $request, Order $order, InventoryService $inventory): RedirectResponse
+    public function update(Request $request, Order $order, InventoryService $inventory, OrderEmailService $orderEmail): RedirectResponse
     {
         $data = $request->validate([
             'status' => ['required', 'in:new,processing,shipped,completed,cancelled'],
             'payment_status' => ['required', 'in:pending,paid,failed,refunded'],
         ]);
-        DB::transaction(function () use ($data, $order, $request, $inventory) {
+        $changes = DB::transaction(function () use ($data, $order, $request, $inventory) {
             $order = Order::query()->lockForUpdate()->findOrFail($order->id);
 
             if (! in_array($data['status'], self::STATUS_TRANSITIONS[$order->status] ?? [], true)) {
@@ -55,6 +56,8 @@ class OrderController extends Controller
                 ]);
             }
 
+            $originalStatus = $order->status;
+            $originalPaymentStatus = $order->payment_status;
             $wasCancelled = $order->status === 'cancelled';
             $willBeCancelled = $data['status'] === 'cancelled';
 
@@ -86,7 +89,19 @@ class OrderController extends Controller
             }
 
             $order->update($data);
+
+            return [
+                'order_id' => $order->id,
+                'status_changed' => $originalStatus !== $order->status,
+                'payment_changed' => $originalPaymentStatus !== $order->payment_status,
+            ];
         });
+
+        $orderEmail->updated(
+            Order::with('items')->findOrFail($changes['order_id']),
+            $changes['status_changed'],
+            $changes['payment_changed'],
+        );
 
         return back()->with('success', 'Status pesanan berhasil diperbarui.');
     }

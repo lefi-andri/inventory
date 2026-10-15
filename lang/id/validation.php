@@ -1,0 +1,46 @@
+<?php
+
+return [
+    'accepted' => ':attribute harus diterima.',
+    'array' => ':attribute harus berupa array.',
+    'boolean' => ':attribute harus bernilai benar atau salah.',
+    'confirmed' => 'Konfirmasi :attribute tidak cocok.',
+    'date' => ':attribute harus berupa tanggal yang valid.',
+    'email' => ':attribute harus berupa alamat email yang valid.',
+    'exists' => ':attribute yang dipilih tidak valid.',
+    'image' => ':attribute harus berupa gambar.',
+    'in' => ':attribute yang dipilih tidak valid.',
+    'integer' => ':attribute harus berupa bilangan bulat.',
+    'max' => [
+        'array' => ':attribute tidak boleh memiliki lebih dari :max item.',
+        'file' => 'Ukuran :attribute tidak boleh lebih dari :max kilobyte.',
+        'numeric' => ':attribute tidak boleh lebih dari :max.',
+        'string' => ':attribute tidak boleh lebih dari :max karakter.',
+    ],
+    'mimes' => ':attribute harus berupa berkas berjenis: :values.',
+    'min' => [
+        'array' => ':attribute minimal harus memiliki :min item.',
+        'file' => 'Ukuran :attribute minimal harus :min kilobyte.',
+        'numeric' => ':attribute minimal harus bernilai :min.',
+        'string' => ':attribute minimal harus terdiri dari :min karakter.',
+    ],
+    'numeric' => ':attribute harus berupa angka.',
+    'required' => ':attribute wajib diisi.',
+    'string' => ':attribute harus berupa teks.',
+    'unique' => ':attribute sudah digunakan.',
+    'uploaded' => ':attribute gagal diunggah.',
+    'url' => ':attribute harus berupa URL yang valid.',
+
+    'attributes' => [
+        'body' => 'pesan',
+        'customer_id' => 'customer',
+        'customer_phone' => 'nomor telepon',
+        'email' => 'email',
+        'images' => 'gambar',
+        'name' => 'nama',
+        'password' => 'password',
+        'payment_method' => 'metode pembayaran',
+        'promotion_code' => 'kode promo',
+        'shipping_address' => 'alamat pengiriman',
+    ],
+];

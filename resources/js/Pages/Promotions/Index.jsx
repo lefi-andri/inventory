@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { currency, shortDate } from '@/lib/format';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Pencil, Plus, Settings2, TicketPercent, Trash2, Truck } from 'lucide-react';
+import { CreditCard, Pencil, Plus, Settings2, TicketPercent, Trash2, Truck } from 'lucide-react';
 import { useState } from 'react';
 
 const emptyPromotion = { kind: 'coupon', code: '', description: '', discount_type: 'fixed', value: '', min_order: 0, max_discount: '', usage_limit: '', starts_at: '', ends_at: '', is_active: true };
@@ -14,8 +14,17 @@ export default function PromotionsIndex({ promotions, shippingSettings }) {
     const [editing, setEditing] = useState(null);
     const form = useForm(emptyPromotion);
     const shipping = useForm({
+        shipping_label: shippingSettings.shipping_label || 'Pengiriman reguler',
         shipping_cost: Number(shippingSettings.shipping_cost),
         free_shipping_threshold: shippingSettings.free_shipping_threshold === null ? '' : Number(shippingSettings.free_shipping_threshold),
+    });
+    const payment = useForm({
+        bank_transfer_enabled: Boolean(shippingSettings.bank_transfer_enabled),
+        bank_name: shippingSettings.bank_name || '',
+        bank_account_number: shippingSettings.bank_account_number || '',
+        bank_account_name: shippingSettings.bank_account_name || '',
+        cod_enabled: Boolean(shippingSettings.cod_enabled),
+        payment_instructions: shippingSettings.payment_instructions || '',
     });
 
     const create = () => { setEditing(null); form.setData(emptyPromotion); form.clearErrors(); setOpen(true); };
@@ -35,15 +44,34 @@ export default function PromotionsIndex({ promotions, shippingSettings }) {
     };
 
     return (
-        <AuthenticatedLayout title="Promo & Ongkir" eyebrow="Pengaturan penjualan" action={<Button onClick={create} className="rounded-xl bg-blue-600 hover:bg-blue-700"><Plus /> Tambah promo</Button>}>
-            <Head title="Promo & Ongkir" />
+        <AuthenticatedLayout title="Promo, Ongkir & Pembayaran" eyebrow="Pengaturan penjualan" action={<Button onClick={create} className="rounded-xl bg-blue-600 hover:bg-blue-700"><Plus /> Tambah promo</Button>}>
+            <Head title="Promo, Ongkir & Pembayaran" />
 
             <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div className="flex items-start gap-3"><span className="grid size-11 place-items-center rounded-xl bg-blue-50 text-blue-600"><Truck /></span><div><h2 className="font-extrabold">Ongkos kirim manual</h2><p className="mt-1 text-sm text-slate-500">Nilai ini digunakan otomatis dan dihitung ulang oleh server saat checkout.</p></div></div>
-                <form onSubmit={(event) => { event.preventDefault(); shipping.patch(route('admin.shipping-settings.update'), { preserveScroll: true }); }} className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                <form onSubmit={(event) => { event.preventDefault(); shipping.patch(route('admin.shipping-settings.update'), { preserveScroll: true }); }} className="mt-5 grid gap-4 md:grid-cols-3">
+                    <Field label="Nama layanan pengiriman" error={shipping.errors.shipping_label}><input value={shipping.data.shipping_label} onChange={(event) => shipping.setData('shipping_label', event.target.value)} className="app-field" placeholder="Pengiriman reguler" required /></Field>
                     <Field label="Biaya ongkir" error={shipping.errors.shipping_cost}><input type="number" min="0" value={shipping.data.shipping_cost} onChange={(event) => shipping.setData('shipping_cost', event.target.value)} className="app-field" required /></Field>
                     <Field label="Gratis ongkir mulai (kosongkan untuk nonaktif)" error={shipping.errors.free_shipping_threshold}><input type="number" min="0" value={shipping.data.free_shipping_threshold} onChange={(event) => shipping.setData('free_shipping_threshold', event.target.value)} className="app-field" /></Field>
-                    <Button disabled={shipping.processing} className="h-11 rounded-xl bg-slate-900 px-5"><Settings2 /> Simpan ongkir</Button>
+                    <div className="md:col-span-3 md:flex md:justify-end"><Button disabled={shipping.processing} className="h-11 rounded-xl bg-slate-900 px-5"><Settings2 /> Simpan ongkir</Button></div>
+                </form>
+            </section>
+
+            <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <div className="flex items-start gap-3"><span className="grid size-11 place-items-center rounded-xl bg-emerald-50 text-emerald-600"><CreditCard /></span><div><h2 className="font-extrabold">Informasi pembayaran</h2><p className="mt-1 text-sm text-slate-500">Metode aktif dan detail rekening akan ditampilkan saat checkout dan disalin ke pesanan.</p></div></div>
+                <form onSubmit={(event) => { event.preventDefault(); payment.patch(route('admin.payment-settings.update'), { preserveScroll: true }); }} className="mt-5 space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-sm font-bold"><input type="checkbox" checked={payment.data.bank_transfer_enabled} onChange={(event) => payment.setData('bank_transfer_enabled', event.target.checked)} className="app-checkbox" /> Aktifkan transfer bank</label>
+                        <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-sm font-bold"><input type="checkbox" checked={payment.data.cod_enabled} onChange={(event) => payment.setData('cod_enabled', event.target.checked)} className="app-checkbox" /> Aktifkan bayar di tempat (COD)</label>
+                    </div>
+                    {payment.errors.bank_transfer_enabled && <p className="text-xs font-semibold text-red-600">{payment.errors.bank_transfer_enabled}</p>}
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <Field label="Nama bank" error={payment.errors.bank_name}><input value={payment.data.bank_name} onChange={(event) => payment.setData('bank_name', event.target.value)} className="app-field" placeholder="BCA" disabled={!payment.data.bank_transfer_enabled} /></Field>
+                        <Field label="Nomor rekening" error={payment.errors.bank_account_number}><input value={payment.data.bank_account_number} onChange={(event) => payment.setData('bank_account_number', event.target.value)} className="app-field" placeholder="1234567890" disabled={!payment.data.bank_transfer_enabled} /></Field>
+                        <Field label="Nama pemilik rekening" error={payment.errors.bank_account_name}><input value={payment.data.bank_account_name} onChange={(event) => payment.setData('bank_account_name', event.target.value)} className="app-field" placeholder="PT Stokara Indonesia" disabled={!payment.data.bank_transfer_enabled} /></Field>
+                    </div>
+                    <Field label="Instruksi pembayaran (opsional)" error={payment.errors.payment_instructions}><textarea value={payment.data.payment_instructions} onChange={(event) => payment.setData('payment_instructions', event.target.value)} className="app-field resize-none" rows="3" placeholder="Cantumkan nomor pesanan pada berita transfer." /></Field>
+                    <div className="flex justify-end"><Button disabled={payment.processing} className="h-11 rounded-xl bg-slate-900 px-5"><Settings2 /> Simpan pembayaran</Button></div>
                 </form>
             </section>
 

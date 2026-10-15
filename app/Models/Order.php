@@ -10,7 +10,8 @@ class Order extends Model
 {
     protected $fillable = [
         'user_id', 'order_number', 'customer_name', 'customer_email', 'customer_phone',
-        'shipping_address', 'status', 'received_at', 'payment_status', 'subtotal',
+        'shipping_address', 'shipping_method', 'status', 'received_at', 'payment_status',
+        'payment_method', 'payment_details', 'subtotal',
         'promotion_id', 'promotion_code', 'promotion_kind', 'discount_amount',
         'shipping_cost', 'total', 'notes',
     ];
@@ -23,6 +24,7 @@ class Order extends Model
             'shipping_cost' => 'decimal:2',
             'total' => 'decimal:2',
             'received_at' => 'datetime',
+            'payment_details' => 'array',
         ];
     }
 

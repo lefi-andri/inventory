@@ -41,6 +41,11 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'locale' => app()->getLocale(),
+            'supportedLocales' => [
+                ['value' => 'id', 'label' => 'Bahasa Indonesia', 'short_label' => 'ID'],
+                ['value' => 'en', 'label' => 'English', 'short_label' => 'EN'],
+            ],
             'site' => fn () => SiteSetting::current()->load('media')->toSharedArray(),
         ];
     }
