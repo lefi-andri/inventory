@@ -30,7 +30,7 @@ export default function AuthenticatedLayout({ title, eyebrow, action, children }
         <>
             <div className="flex h-20 items-center justify-between px-6">
                 <Link href={route('dashboard')} className="flex items-center gap-3">
-                    <BrandLogo className="size-10 rounded-xl" fallbackClassName="bg-lime-300 text-slate-950 shadow-[0_8px_30px_rgba(190,242,100,.18)]" />
+                    <BrandLogo className="size-10 rounded-xl" fallbackClassName="bg-blue-600 text-white shadow-md" />
                     <span>
                         <span className="block max-w-36 truncate text-lg font-extrabold tracking-tight text-white">{site.brand_name}</span>
                         <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">commerce ops</span>
@@ -46,16 +46,16 @@ export default function AuthenticatedLayout({ title, eyebrow, action, children }
                     const active = route().current(item.route);
                     return (
                         <Link key={item.route} href={route(item.route)} onClick={() => setOpen(false)} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${active ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:bg-white/[.06] hover:text-white'}`}>
-                            <Icon className={`size-[18px] ${active ? 'text-lime-300' : ''}`} />
+                            <Icon className={`size-[18px] ${active ? 'text-blue-400' : ''}`} />
                             {item.label}
-                            {active && <span className="ml-auto size-1.5 rounded-full bg-lime-300" />}
+                            {active && <span className="ml-auto size-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_var(--color-blue-400)]" />}
                         </Link>
                     );
                 })}
             </nav>
 
             <div className="m-3 rounded-2xl border border-white/10 bg-white/[.045] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-lime-300">Toko aktif</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-blue-400">Toko aktif</p>
                 <p className="mt-1 text-sm font-semibold text-white">Katalog online tersedia</p>
                 <Link href={route('storefront')} className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white">
                     <Store className="size-4" /> Lihat storefront

@@ -1,5 +1,6 @@
 import { Button } from '@/Components/ui/button';
 import BrandLogo from '@/Components/BrandLogo';
+import SitePreferencesBanner from '@/Components/SitePreferencesBanner';
 import FloatingChatWidget from '@/Components/FloatingChatWidget';
 import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
@@ -84,6 +85,19 @@ export default function Storefront({ products, categories, shippingSettings, pay
 
         return () => window.clearInterval(interval);
     }, [heroes.length]);
+
+    useEffect(() => {
+        setCart((currentCart) => currentCart.map((item) => {
+            const fresh = products.find((p) => p.id === item.id);
+            return fresh ? { ...item, name: fresh.name, description: fresh.description } : item;
+        }));
+        if (selectedProduct) {
+            const freshSelected = products.find((p) => p.id === selectedProduct.id);
+            if (freshSelected) {
+                setSelectedProduct(freshSelected);
+            }
+        }
+    }, [products]);
 
     const add = (product) => setCart((current) => {
         const existing = current.find((item) => item.id === product.id);
@@ -199,6 +213,7 @@ export default function Storefront({ products, categories, shippingSettings, pay
             </Dialog>
             <ProductDetailDialog product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={add} />
             <FloatingChatWidget />
+            <SitePreferencesBanner />
         </div>
     );
 }
@@ -333,7 +348,7 @@ function CartSheet({ open, onOpenChange, count, cart, setCart, changeQuantity, s
             <SheetTrigger asChild>
                 <Button className="relative h-10 rounded-xl bg-slate-950 px-3 hover:bg-slate-800 xl:px-4">
                     <ShoppingBag /> <span className="hidden xl:inline">Keranjang</span>
-                    {count > 0 && <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-lime-300 text-[10px] font-black text-slate-950 ring-2 ring-white xl:static xl:ml-1 xl:ring-0">{count}</span>}
+                    {count > 0 && <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-blue-600 text-[10px] font-black text-white ring-2 ring-white xl:static xl:ml-1 xl:ring-0">{count}</span>}
                 </Button>
             </SheetTrigger>
             <SheetContent className="flex w-full flex-col sm:max-w-md">
@@ -361,9 +376,20 @@ function StorefrontFooter({ site }) {
                     <Link href={route('storefront')} className="inline-flex items-center gap-3"><BrandLogo /><span className="text-xl font-black tracking-tight text-white">{site.brand_name}</span></Link>
                     {site.footer_description && <p className="mt-4 text-sm leading-6 text-slate-400">{site.footer_description}</p>}
                 </div>
-                {links.length > 0 && <nav className="flex flex-wrap gap-x-6 gap-y-3 md:max-w-md md:justify-end" aria-label="Navigasi footer">{links.map((link, index) => <a key={`${link.url}-${index}`} href={link.url} className="text-sm font-bold text-slate-300 transition hover:text-lime-300">{link.label}</a>)}</nav>}
+                {links.length > 0 && <nav className="flex flex-wrap gap-x-6 gap-y-3 md:max-w-md md:justify-end" aria-label="Navigasi footer">{links.map((link, index) => <a key={`${link.url}-${index}`} href={link.url} className="text-sm font-bold text-slate-300 transition hover:text-blue-400">{link.label}</a>)}</nav>}
             </div>
-            <div className="border-t border-white/10"><div className="mx-auto max-w-7xl px-4 py-5 text-xs text-slate-500 sm:px-6 lg:px-8">{site.footer_copyright || `© ${new Date().getFullYear()} ${site.brand_name}.`}</div></div>
+            <div className="border-t border-white/10">
+                <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+                    <div>{site.footer_copyright || `© ${new Date().getFullYear()} ${site.brand_name}.`}</div>
+                    <div className="flex flex-wrap items-center gap-4 font-semibold text-slate-400">
+                        <Link href={route('privacy-policy')} className="transition hover:text-white">Kebijakan Privasi</Link>
+                        <span>·</span>
+                        <Link href={route('cookie-policy')} className="transition hover:text-white">Kebijakan Cookie</Link>
+                        <span>·</span>
+                        <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-settings'))} className="transition hover:text-white">Pengaturan Cookie</button>
+                    </div>
+                </div>
+            </div>
         </footer>
     );
 }
@@ -377,14 +403,14 @@ function HeroCarousel({ heroes, activeIndex, activeHero, onChange }) {
             {activeHero.image && <img key={activeHero.id} src={activeHero.image} alt="" className="absolute inset-0 h-full w-full animate-in fade-in duration-700 object-cover" />}
             <div className={`absolute inset-0 ${activeHero.image ? 'bg-gradient-to-r from-slate-950 via-slate-950/75 to-slate-950/20' : 'bg-[#0b1220]'}`} />
             <div className="absolute -right-20 -top-24 size-[420px] rounded-full bg-blue-600/25 blur-3xl" />
-            <div className="absolute bottom-0 left-1/3 size-64 rounded-full bg-lime-300/10 blur-3xl" />
+            <div className="absolute bottom-0 left-1/3 size-64 rounded-full bg-blue-500/15 blur-3xl" />
 
             <div className="relative mx-auto grid min-h-[520px] max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-[1.1fr_.9fr] lg:px-8">
                 <div key={`content-${activeHero.id}`} className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-                    {activeHero.eyebrow && <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/30 px-3 py-1.5 text-xs font-bold text-lime-300 backdrop-blur"><ShieldCheck className="size-4" /> {activeHero.eyebrow}</span>}
+                    {activeHero.eyebrow && <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/30 px-3 py-1.5 text-xs font-bold text-blue-300 backdrop-blur"><ShieldCheck className="size-4" /> {activeHero.eyebrow}</span>}
                     <h1 className="mt-6 max-w-2xl text-4xl font-black leading-[1.06] tracking-[-.04em] text-white drop-shadow-sm sm:text-6xl">{activeHero.title}</h1>
                     {activeHero.description && <p className="mt-5 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">{activeHero.description}</p>}
-                    {activeHero.cta_label && activeHero.cta_url && <a href={activeHero.cta_url} className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-lime-300 px-5 text-sm font-black text-slate-950 shadow-lg transition hover:bg-lime-200">{activeHero.cta_label} <ArrowRight className="size-4" /></a>}
+                    {activeHero.cta_label && activeHero.cta_url && <a href={activeHero.cta_url} className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700">{activeHero.cta_label} <ArrowRight className="size-4" /></a>}
                 </div>
                 <div id="benefit" className="grid content-end gap-3 sm:grid-cols-2 lg:pt-16">
                     <Benefit icon={Truck} title="Pengiriman cepat" text="Diproses langsung dari stok tersedia." />
@@ -394,7 +420,7 @@ function HeroCarousel({ heroes, activeIndex, activeHero, onChange }) {
 
             {heroes.length > 1 && <>
                 <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-slate-950/35 px-3 py-2 backdrop-blur">
-                    {heroes.map((hero, index) => <button key={hero.id} type="button" onClick={() => onChange(index)} className={`h-2 rounded-full transition-all ${index === activeIndex ? 'w-7 bg-lime-300' : 'w-2 bg-white/50 hover:bg-white'}`} aria-label={`Tampilkan banner ${index + 1}`} />)}
+                    {heroes.map((hero, index) => <button key={hero.id} type="button" onClick={() => onChange(index)} className={`h-2 rounded-full transition-all ${index === activeIndex ? 'w-7 bg-blue-500' : 'w-2 bg-white/50 hover:bg-white'}`} aria-label={`Tampilkan banner ${index + 1}`} />)}
                 </div>
                 <button type="button" onClick={previous} className="absolute left-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-slate-950/35 text-white backdrop-blur transition hover:bg-slate-950/60 sm:left-6" aria-label="Banner sebelumnya"><ChevronLeft /></button>
                 <button type="button" onClick={next} className="absolute right-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-slate-950/35 text-white backdrop-blur transition hover:bg-slate-950/60 sm:right-6" aria-label="Banner berikutnya"><ChevronRight /></button>
@@ -403,7 +429,7 @@ function HeroCarousel({ heroes, activeIndex, activeHero, onChange }) {
     );
 }
 
-function Benefit({ icon: Icon, title, text }) { return <div className="rounded-2xl border border-white/10 bg-white/[.06] p-5 backdrop-blur"><span className="grid size-10 place-items-center rounded-xl bg-lime-300 text-slate-950"><Icon className="size-5" /></span><p className="mt-4 font-extrabold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-slate-400">{text}</p></div>; }
+function Benefit({ icon: Icon, title, text }) { return <div className="rounded-2xl border border-white/10 bg-white/[.06] p-5 backdrop-blur"><span className="grid size-10 place-items-center rounded-xl bg-blue-600 text-white shadow-xs"><Icon className="size-5" /></span><p className="mt-4 font-extrabold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-slate-400">{text}</p></div>; }
 function Field({ label, error, children }) { return <label className="block"><span className="mb-1.5 block text-sm font-bold text-slate-700">{label}</span>{children}{error && <span className="mt-1 block text-xs text-red-600">{error}</span>}</label>; }
 
 function PaymentDetails({ details }) {

@@ -67,8 +67,8 @@ export default function HeroBannersIndex({ banners }) {
         };
 
         if (editing) {
-            form.transform((data) => ({ ...data, _method: 'patch' }))
-                .post(route('admin.hero-banners.update', editing.id), options);
+            form.transform((data) => ({ ...data, _method: 'patch' }));
+            form.post(route('admin.hero-banners.update', editing.id), options);
             return;
         }
 
@@ -100,7 +100,7 @@ export default function HeroBannersIndex({ banners }) {
                                     <img src={banner.image} alt={banner.title} className="h-full w-full object-cover" />
                                     <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/35 to-transparent" />
                                     <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                                        {banner.eyebrow && <p className="text-xs font-black uppercase tracking-[.16em] text-lime-300">{banner.eyebrow}</p>}
+                                        {banner.eyebrow && <p className="text-xs font-black uppercase tracking-[.16em] text-blue-300">{banner.eyebrow}</p>}
                                         <h3 className="mt-1 line-clamp-2 text-xl font-black tracking-tight">{banner.title}</h3>
                                     </div>
                                     <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-black text-slate-800 shadow-sm">Urutan {banner.sort_order}</span>

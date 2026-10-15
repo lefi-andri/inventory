@@ -24,16 +24,18 @@ class StorefrontController extends Controller
 
                 return [
                     'id' => $product->id,
-                    'name' => $product->name,
+                    'name' => $product->localizedName(),
+                    'default_name' => $product->name,
                     'slug' => $product->slug,
                     'sku' => $product->sku,
-                    'description' => $product->description,
+                    'description' => $product->localizedDescription(),
                     'price' => (float) $product->price,
                     'stock' => $product->stock,
                     'category' => $product->category?->name,
                     'is_active' => $product->is_active,
                     'image' => $images->first(),
                     'images' => $images,
+                    'translations' => $product->translations ?? [],
                 ];
             });
 

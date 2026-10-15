@@ -12,6 +12,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\SiteSettingController;
+use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\UserManagementController;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'index'])->name('storefront');
 Route::post('/locale', LocaleController::class)->name('locale.update');
+Route::get('/privacy-policy', [PolicyController::class, 'privacy'])->name('privacy-policy');
+Route::get('/cookie-policy', [PolicyController::class, 'cookie'])->name('cookie-policy');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'permission:dashboard.view'])->name('dashboard');
@@ -40,6 +43,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/products', [ProductController::class, 'store'])->middleware('permission:products.create')->name('products.store');
     Route::patch('/products/{product}', [ProductController::class, 'update'])->middleware('permission:products.update')->name('products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.delete')->name('products.destroy');
+    Route::post('/products/{product}/media', [ProductController::class, 'storeMedia'])->middleware('permission:products.update')->name('products.media.store');
+    Route::delete('/products/{product}/media/{media}', [ProductController::class, 'destroyMedia'])->middleware('permission:products.update')->name('products.media.destroy');
+    Route::post('/products/{product}/media/{media}/primary', [ProductController::class, 'setPrimaryMedia'])->middleware('permission:products.update')->name('products.media.primary');
 
     Route::get('/inventory', [InventoryController::class, 'index'])->middleware('permission:inventory.view')->name('inventory.index');
     Route::post('/inventory/movements', [InventoryController::class, 'store'])->middleware('permission:inventory.adjust')->name('inventory.store');

@@ -19,7 +19,8 @@ class InventoryController extends Controller
         return Inertia::render('Inventory/Index', [
             'products' => Product::with('category')->orderBy('name')->get()->map(fn ($product) => [
                 'id' => $product->id,
-                'name' => $product->name,
+                'name' => $product->localizedName(),
+                'default_name' => $product->name,
                 'sku' => $product->sku,
                 'stock' => $product->stock,
                 'threshold' => $product->low_stock_threshold,
@@ -27,7 +28,7 @@ class InventoryController extends Controller
             ]),
             'movements' => InventoryMovement::with(['product', 'user'])->latest()->limit(50)->get()->map(fn ($movement) => [
                 'id' => $movement->id,
-                'product' => $movement->product?->name,
+                'product' => $movement->product?->localizedName() ?? $movement->product?->name,
                 'sku' => $movement->product?->sku,
                 'user' => $movement->user?->name ?? 'Sistem',
                 'type' => $movement->type,

@@ -74,11 +74,76 @@ class DatabaseSeeder extends Seeder
         });
 
         $products = [
-            ['category' => 'Home Living', 'name' => 'Aroma Diffuser Sora', 'sku' => 'HOM-001', 'description' => 'Diffuser ultrasonik 300 ml dengan pencahayaan lembut.', 'price' => 329000, 'cost' => 205000, 'stock' => 18, 'low_stock_threshold' => 5],
-            ['category' => 'Home Living', 'name' => 'Lampu Meja Nami', 'sku' => 'HOM-002', 'description' => 'Lampu meja minimal dengan tiga tingkat kecerahan.', 'price' => 459000, 'cost' => 290000, 'stock' => 4, 'low_stock_threshold' => 5],
-            ['category' => 'Aksesoris', 'name' => 'Tumbler Kiyo 600ml', 'sku' => 'ACC-001', 'description' => 'Tumbler stainless berinsulasi untuk aktivitas harian.', 'price' => 189000, 'cost' => 98000, 'stock' => 32, 'low_stock_threshold' => 8],
-            ['category' => 'Elektronik', 'name' => 'Portable Speaker Raku', 'sku' => 'ELC-001', 'description' => 'Speaker Bluetooth ringkas dengan daya tahan 12 jam.', 'price' => 649000, 'cost' => 410000, 'stock' => 3, 'low_stock_threshold' => 5],
-            ['category' => 'Aksesoris', 'name' => 'Organizer Kabel Mino', 'sku' => 'ACC-002', 'description' => 'Organizer meja modular untuk kabel dan perangkat kecil.', 'price' => 79000, 'cost' => 35000, 'stock' => 45, 'low_stock_threshold' => 10],
+            [
+                'category' => 'Home Living',
+                'name' => 'Aroma Diffuser Sora',
+                'sku' => 'HOM-001',
+                'description' => 'Diffuser ultrasonik 300 ml dengan pencahayaan lembut.',
+                'translations' => [
+                    'id' => ['name' => 'Aroma Diffuser Sora', 'description' => 'Diffuser ultrasonik 300 ml dengan pencahayaan lembut.'],
+                    'en' => ['name' => 'Sora Aroma Diffuser', 'description' => '300 ml ultrasonic diffuser with gentle ambient lighting.'],
+                ],
+                'price' => 329000,
+                'cost' => 205000,
+                'stock' => 18,
+                'low_stock_threshold' => 5,
+            ],
+            [
+                'category' => 'Home Living',
+                'name' => 'Lampu Meja Nami',
+                'sku' => 'HOM-002',
+                'description' => 'Lampu meja minimal dengan tiga tingkat kecerahan.',
+                'translations' => [
+                    'id' => ['name' => 'Lampu Meja Nami', 'description' => 'Lampu meja minimal dengan tiga tingkat kecerahan.'],
+                    'en' => ['name' => 'Nami Table Lamp', 'description' => 'Minimalist desk lamp with three adjustable brightness levels.'],
+                ],
+                'price' => 459000,
+                'cost' => 290000,
+                'stock' => 4,
+                'low_stock_threshold' => 5,
+            ],
+            [
+                'category' => 'Aksesoris',
+                'name' => 'Tumbler Kiyo 600ml',
+                'sku' => 'ACC-001',
+                'description' => 'Tumbler stainless berinsulasi untuk aktivitas harian.',
+                'translations' => [
+                    'id' => ['name' => 'Tumbler Kiyo 600ml', 'description' => 'Tumbler stainless berinsulasi untuk aktivitas harian.'],
+                    'en' => ['name' => 'Kiyo 600ml Tumbler', 'description' => 'Insulated stainless steel tumbler for everyday hydration.'],
+                ],
+                'price' => 189000,
+                'cost' => 98000,
+                'stock' => 32,
+                'low_stock_threshold' => 8,
+            ],
+            [
+                'category' => 'Elektronik',
+                'name' => 'Portable Speaker Raku',
+                'sku' => 'ELC-001',
+                'description' => 'Speaker Bluetooth ringkas dengan daya tahan 12 jam.',
+                'translations' => [
+                    'id' => ['name' => 'Portable Speaker Raku', 'description' => 'Speaker Bluetooth ringkas dengan daya tahan 12 jam.'],
+                    'en' => ['name' => 'Raku Portable Speaker', 'description' => 'Compact Bluetooth speaker with 12-hour battery life.'],
+                ],
+                'price' => 649000,
+                'cost' => 410000,
+                'stock' => 3,
+                'low_stock_threshold' => 5,
+            ],
+            [
+                'category' => 'Aksesoris',
+                'name' => 'Organizer Kabel Mino',
+                'sku' => 'ACC-002',
+                'description' => 'Organizer meja modular untuk kabel dan perangkat kecil.',
+                'translations' => [
+                    'id' => ['name' => 'Organizer Kabel Mino', 'description' => 'Organizer meja modular untuk kabel dan perangkat kecil.'],
+                    'en' => ['name' => 'Mino Cable Organizer', 'description' => 'Modular desktop organizer for cables and small accessories.'],
+                ],
+                'price' => 79000,
+                'cost' => 35000,
+                'stock' => 45,
+                'low_stock_threshold' => 10,
+            ],
         ];
 
         $inventory = app(InventoryService::class);
