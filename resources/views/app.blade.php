@@ -1,16 +1,17 @@
+@php
+    $currentSetting = \App\Models\SiteSetting::current();
+    $faviconUrl = $currentSetting?->getFirstMediaUrl('site-favicon');
+    $currentCurrency = \App\Models\CommerceSetting::current()->currency ?? 'IDR';
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-currency="{{ $currentCurrency }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <title inertia>{{ config('app.name', 'TithoShop') }}</title>
 
         <!-- Dynamic Favicon -->
-        @php
-            $currentSetting = \App\Models\SiteSetting::current();
-            $faviconUrl = $currentSetting?->getFirstMediaUrl('site-favicon');
-        @endphp
         @if ($faviconUrl)
             <link rel="icon" id="dynamic-favicon" href="{{ $faviconUrl }}">
             <link rel="apple-touch-icon" href="{{ $faviconUrl }}">

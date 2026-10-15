@@ -13,6 +13,7 @@ class SiteSetting extends Model implements HasMedia
     protected $fillable = [
         'brand_name',
         'theme_color',
+        'default_locale',
         'navbar_links',
         'footer_description',
         'footer_copyright',
@@ -56,11 +57,12 @@ class SiteSetting extends Model implements HasMedia
     public static function current(): self
     {
         return static::query()->first() ?? static::query()->create([
-            'brand_name' => 'Stokara',
+            'brand_name' => config('app.name', 'TithoShop'),
             'theme_color' => \App\Support\ThemeColor::DEFAULT_COLOR,
+            'default_locale' => 'id',
             'navbar_links' => static::defaultNavbarLinks(),
             'footer_description' => 'Produk fungsional untuk keseharian modern.',
-            'footer_copyright' => '© '.now()->year.' Stokara. Semua hak dilindungi.',
+            'footer_copyright' => '© '.now()->year.' '.config('app.name', 'TithoShop').'. Semua hak dilindungi.',
             'footer_links' => [],
             'cookie_consent_enabled' => true,
             'cookie_consent_title' => static::defaultCookieConsentTitle(),
@@ -263,6 +265,7 @@ MARKDOWN;
         return [
             'brand_name' => $this->brand_name,
             'theme_color' => $themeColor,
+            'default_locale' => $this->default_locale ?: 'id',
             'theme_palette' => \App\Support\ThemeColor::generatePalette($themeColor),
             'theme_presets' => \App\Support\ThemeColor::PRESETS,
             'logo' => $this->getFirstMediaUrl('site-logo') ?: null,

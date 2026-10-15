@@ -14,13 +14,17 @@ class StorefrontController extends Controller
     public function index(): Response
     {
         $commerceSettings = CommerceSetting::current();
+        $isDollar = ($commerceSettings->currency ?? 'IDR') === 'USD';
         $products = Product::query()
             ->with(['category', 'media'])
             ->availableForSale()
             ->latest()
             ->get()
-            ->map(function (Product $product) {
+            ->map(function (Product $product) use ($isDollar) {
                 $images = $product->getMedia('products')->map(fn ($media) => $media->getUrl())->values();
+                $effectivePrice = ($isDollar && $product->price_usd !== null && (float) $product->price_usd > 0)
+                    ? (float) $product->price_usd
+                    : (float) $product->price;
 
                 return [
                     'id' => $product->id,
@@ -29,7 +33,9 @@ class StorefrontController extends Controller
                     'slug' => $product->slug,
                     'sku' => $product->sku,
                     'description' => $product->localizedDescription(),
-                    'price' => (float) $product->price,
+                    'price' => $effectivePrice,
+                    'price_idr' => (float) $product->price,
+                    'price_usd' => $product->price_usd !== null ? (float) $product->price_usd : null,
                     'stock' => $product->stock,
                     'category' => $product->category?->name,
                     'is_active' => $product->is_active,

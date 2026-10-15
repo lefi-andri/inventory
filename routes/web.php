@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\AdminChatController;
+use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerChatController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HeroBannerController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
@@ -31,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout/promotion', [CheckoutController::class, 'validatePromotion'])->name('checkout.promotion.validate');
     Route::get('/my-orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
     Route::patch('/my-orders/{order}/received', [CustomerOrderController::class, 'confirmReceived'])->name('customer.orders.received');
+    Route::get('/orders/{order}/invoice', [InvoiceController::class, 'show'])->name('orders.invoice');
     Route::get('/chat', [CustomerChatController::class, 'index'])->name('customer.chat.index');
     Route::get('/chat/messages', [CustomerChatController::class, 'messages'])->name('customer.chat.messages.index');
     Route::post('/chat/messages', [CustomerChatController::class, 'store'])->name('customer.chat.messages.store');
@@ -74,6 +77,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/promotions/{promotion}', [PromotionController::class, 'destroy'])->name('promotions.destroy');
         Route::patch('/shipping-settings', [PromotionController::class, 'updateShipping'])->name('shipping-settings.update');
         Route::patch('/payment-settings', [PromotionController::class, 'updatePayment'])->name('payment-settings.update');
+        Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/chats/{conversation}/read', [AdminNotificationController::class, 'markChatRead'])->name('notifications.chats.read');
     });
 });
 

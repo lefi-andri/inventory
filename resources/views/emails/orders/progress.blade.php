@@ -22,22 +22,32 @@ Halo {{ $order['customer_name'] }},
 @endif
 @endif
 
+@php
+    $currency = $order['currency'] ?? 'IDR';
+    $formatMoney = function ($amount) use ($currency) {
+        if ($currency === 'USD') {
+            return '$' . number_format((float) $amount, 2, '.', ',');
+        }
+        return 'Rp' . number_format((float) $amount, 0, ',', '.');
+    };
+@endphp
+
 ## Rincian barang
 
 <x-mail::table>
 | Produk | Jumlah | Harga | Subtotal |
 | :-- | --: | --: | --: |
 @foreach ($order['items'] as $item)
-| {{ $item['name'] }} ({{ $item['sku'] }}) | {{ $item['quantity'] }} | Rp{{ number_format($item['price'], 0, ',', '.') }} | Rp{{ number_format($item['subtotal'], 0, ',', '.') }} |
+| {{ $item['name'] }} ({{ $item['sku'] }}) | {{ $item['quantity'] }} | {{ $formatMoney($item['price']) }} | {{ $formatMoney($item['subtotal']) }} |
 @endforeach
 </x-mail::table>
 
-Subtotal: **Rp{{ number_format($order['subtotal'], 0, ',', '.') }}**  
+Subtotal: **{{ $formatMoney($order['subtotal']) }}**  
 @if ($order['discount_amount'] > 0)
-Diskon{{ $order['promotion_code'] ? ' ('.$order['promotion_code'].')' : '' }}: **-Rp{{ number_format($order['discount_amount'], 0, ',', '.') }}**  
+Diskon{{ $order['promotion_code'] ? ' ('.$order['promotion_code'].')' : '' }}: **-{{ $formatMoney($order['discount_amount']) }}**  
 @endif
-{{ $order['shipping_method'] }}: **{{ $order['shipping_cost'] > 0 ? 'Rp'.number_format($order['shipping_cost'], 0, ',', '.') : 'Gratis' }}**  
-Total: **Rp{{ number_format($order['total'], 0, ',', '.') }}**
+{{ $order['shipping_method'] }}: **{{ $order['shipping_cost'] > 0 ? $formatMoney($order['shipping_cost']) : 'Gratis' }}**  
+Total: **{{ $formatMoney($order['total']) }}**
 
 ## Pengiriman
 

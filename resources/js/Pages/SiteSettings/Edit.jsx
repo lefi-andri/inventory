@@ -2,7 +2,7 @@ import { Button } from '@/Components/ui/button';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import {
-    ArrowDown, ArrowUp, ArrowUpRight, Check, Cookie, FileText, ImagePlus, Link2, Palette, Plus,
+    ArrowDown, ArrowUp, ArrowUpRight, Check, Cookie, FileText, ImagePlus, Languages, Link2, Palette, Plus,
     RotateCcw, Save, ShieldCheck, ShoppingBag, Sparkles, Trash2, Upload
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ export default function SiteSettingsEdit({ settings, defaultTemplates }) {
     const form = useForm({
         brand_name: settings.brand_name || '',
         theme_color: settings.theme_color || DEFAULT_THEME_COLOR,
+        default_locale: settings.default_locale || 'id',
         logo: null,
         remove_logo: false,
         favicon: null,
@@ -55,6 +56,7 @@ export default function SiteSettingsEdit({ settings, defaultTemplates }) {
             ...prev,
             brand_name: settings.brand_name || '',
             theme_color: settings.theme_color || DEFAULT_THEME_COLOR,
+            default_locale: settings.default_locale || 'id',
             navbar_links: settings.navbar_links || [],
             footer_description: settings.footer_description || '',
             footer_copyright: settings.footer_copyright || '',
@@ -70,6 +72,7 @@ export default function SiteSettingsEdit({ settings, defaultTemplates }) {
     }, [
         settings.brand_name,
         settings.theme_color,
+        settings.default_locale,
         settings.navbar_links,
         settings.footer_description,
         settings.footer_copyright,
@@ -216,7 +219,7 @@ export default function SiteSettingsEdit({ settings, defaultTemplates }) {
                                         ) : (
                                             <ShoppingBag className="size-4 shrink-0 text-blue-600" />
                                         )}
-                                        <span className="truncate">{form.data.brand_name || 'Stokara'} - Toko</span>
+                                        <span className="truncate">{form.data.brand_name || 'TithoShop'} - Toko</span>
                                     </div>
                                 </div>
                             </div>
@@ -241,6 +244,12 @@ export default function SiteSettingsEdit({ settings, defaultTemplates }) {
                     }}
                     error={form.errors.theme_color}
                     presets={settings.theme_presets || THEME_PRESETS}
+                />
+
+                <DefaultLocaleSection
+                    defaultLocale={form.data.default_locale}
+                    onChange={(loc) => form.setData('default_locale', loc)}
+                    error={form.errors.default_locale}
                 />
 
                 <LinkSection
@@ -671,6 +680,102 @@ function ThemeColorSection({ themeColor, onChange, error, presets = THEME_PRESET
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function DefaultLocaleSection({ defaultLocale, onChange, error }) {
+    const options = [
+        {
+            value: 'id',
+            code: 'ID',
+            flag: '🇮🇩',
+            title: 'Bahasa Indonesia',
+            subtitle: 'Bahasa Utama & Standar',
+            description: 'Format bahasa Indonesia digunakan sebagai bahasa bawaan untuk storefront publik, email transaksi, dan registrasi akun baru.',
+            tag: 'Direkomendasikan di Indonesia',
+        },
+        {
+            value: 'en',
+            code: 'EN',
+            flag: '🇬🇧',
+            title: 'English (International)',
+            subtitle: 'International Standard',
+            description: 'Standard English is presented by default to visitors and customers across product catalogs, navigation, and checkout.',
+            tag: 'Global Audience',
+        },
+    ];
+
+    return (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="border-b border-slate-100 pb-5">
+                <div className="flex items-start gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <Languages className="size-5" />
+                    </span>
+                    <div>
+                        <h2 className="text-lg font-extrabold text-slate-950">Bahasa Default Website</h2>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Pilih bahasa bawaan yang langsung aktif saat pengunjung pertama kali membuka website atau mendaftar akun baru.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-6 space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {options.map((option) => {
+                        const isSelected = (defaultLocale || 'id') === option.value;
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => onChange(option.value)}
+                                className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all ${
+                                    isSelected
+                                        ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-2 ring-indigo-600/30'
+                                        : 'border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-100/70'
+                                }`}
+                            >
+                                <div className="flex w-full items-center justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="text-2xl leading-none">{option.flag}</span>
+                                        <span className="rounded-md bg-white px-2 py-0.5 text-xs font-black tracking-wide text-slate-800 shadow-xs border border-slate-200">
+                                            {option.code}
+                                        </span>
+                                    </div>
+                                    {isSelected ? (
+                                        <span className="grid size-6 place-items-center rounded-full bg-indigo-600 text-white shadow-xs">
+                                            <Check className="size-3.5 stroke-[3]" />
+                                        </span>
+                                    ) : (
+                                        <span className="size-5 rounded-full border-2 border-slate-300 group-hover:border-slate-400" />
+                                    )}
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-base font-extrabold text-slate-950">{option.title}</p>
+                                    </div>
+                                    <p className="text-xs font-semibold text-indigo-700">{option.subtitle}</p>
+                                    <p className="mt-2 text-xs leading-relaxed text-slate-600">{option.description}</p>
+                                    <span className="mt-3 inline-block rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold text-slate-600 border border-slate-200/80">
+                                        {option.tag}
+                                    </span>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-xs text-slate-600">
+                    <p className="flex items-center gap-2 font-medium">
+                        <span className="font-bold text-slate-900">💡 Fleksibilitas Pengunjung:</span>
+                        Pengunjung dan pelanggan tetap memiliki kebebasan untuk beralih bahasa kapan saja secara mandiri melalui tombol pemilih bahasa (Language Switcher) di bagian atas navigasi.
+                    </p>
                 </div>
             </div>
         </section>

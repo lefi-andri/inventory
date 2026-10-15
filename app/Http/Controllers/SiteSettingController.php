@@ -50,6 +50,7 @@ class SiteSettingController extends Controller
         $data = $request->validate([
             'brand_name' => ['required', 'string', 'max:80'],
             'theme_color' => ['nullable', 'string', 'max:20', 'regex:/^#([a-f0-9]{6}|[a-f0-9]{3})$/i'],
+            'default_locale' => ['nullable', 'string', 'in:id,en'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'remove_logo' => ['nullable', 'boolean'],
             'favicon' => ['nullable', 'file', 'mimes:ico,png,jpg,jpeg,webp,svg', 'max:2048'],
@@ -85,6 +86,13 @@ class SiteSettingController extends Controller
 
         $settings = SiteSetting::current();
         $settings->update($data);
+
+        if (! empty($data['default_locale'])) {
+            $request->session()->put('locale', $data['default_locale']);
+            if ($request->user() && $request->user()->locale !== null) {
+                $request->user()->update(['locale' => $data['default_locale']]);
+            }
+        }
 
         if ($removeLogo) {
             $settings->clearMediaCollection('site-logo');

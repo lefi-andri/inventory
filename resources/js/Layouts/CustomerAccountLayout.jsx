@@ -3,7 +3,7 @@ import FloatingChatWidget from '@/Components/FloatingChatWidget';
 import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import ProfileCompletionNotice from '@/Components/ProfileCompletionNotice';
 import { Link, router, usePage } from '@inertiajs/react';
-import { LogOut, MessageCircle, ReceiptText, Store, UserRound } from 'lucide-react';
+import { CheckCircle2, LogOut, MessageCircle, ReceiptText, Store, UserRound } from 'lucide-react';
 
 const navigation = [
     { label: 'Toko', route: 'storefront', icon: Store },
@@ -56,7 +56,12 @@ export default function CustomerAccountLayout({ title, description, children }) 
                     </div>
                 </div>
 
-                {flash?.success && <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{flash.success}</div>}
+                {flash?.success && (
+                    <div className="mt-6 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-xs">
+                        <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
+                        <p>{flash.success}</p>
+                    </div>
+                )}
                 {flash?.error && <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">{flash.error}</div>}
                 <ProfileCompletionNotice className="mt-6" />
 

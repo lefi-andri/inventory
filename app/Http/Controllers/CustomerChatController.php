@@ -65,7 +65,8 @@ class CustomerChatController extends Controller
         abort_unless($request->user()->hasRole('customer'), 403);
 
         $data = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
+            'body' => ['nullable', 'string', 'max:2000', 'required_without:attachment'],
+            'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,pdf', 'max:10240'],
         ]);
 
         $conversation = DB::transaction(function () use ($request, $data) {
@@ -74,10 +75,21 @@ class CustomerChatController extends Controller
                 ['status' => 'open'],
             );
 
-            $conversation->messages()->create([
+            $messagePayload = [
                 'sender_id' => $request->user()->id,
-                'body' => trim($data['body']),
-            ]);
+                'body' => isset($data['body']) && trim($data['body']) !== '' ? trim($data['body']) : null,
+            ];
+
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
+                $path = $file->store('chat-attachments', 'public');
+                $messagePayload['attachment_path'] = $path;
+                $messagePayload['attachment_name'] = $file->getClientOriginalName();
+                $messagePayload['attachment_mime'] = $file->getMimeType();
+                $messagePayload['attachment_size'] = $file->getSize();
+            }
+
+            $conversation->messages()->create($messagePayload);
 
             $conversation->update([
                 'status' => 'open',
@@ -112,6 +124,7 @@ class CustomerChatController extends Controller
                 'body' => $message->body,
                 'sender_id' => $message->sender_id,
                 'sender_name' => $message->sender->name,
+                'attachment' => $message->toAttachmentArray(),
                 'read_at' => $message->read_at,
                 'created_at' => $message->created_at,
             ]),

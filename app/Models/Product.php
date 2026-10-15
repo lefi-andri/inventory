@@ -15,7 +15,7 @@ class Product extends Model implements HasMedia
     use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
-        'category_id', 'name', 'slug', 'sku', 'description', 'translations', 'price', 'cost',
+        'category_id', 'name', 'slug', 'sku', 'description', 'translations', 'price', 'price_usd', 'cost',
         'stock', 'low_stock_threshold', 'is_active', 'is_discontinued',
     ];
 
@@ -23,11 +23,22 @@ class Product extends Model implements HasMedia
     {
         return [
             'price' => 'decimal:2',
+            'price_usd' => 'decimal:2',
             'cost' => 'decimal:2',
             'is_active' => 'boolean',
             'is_discontinued' => 'boolean',
             'translations' => 'array',
         ];
+    }
+
+    public function effectivePrice(?string $currency = null): float
+    {
+        $curr = $currency ?: (CommerceSetting::current()->currency ?? 'IDR');
+        if ($curr === 'USD' && $this->price_usd !== null && (float) $this->price_usd > 0) {
+            return (float) $this->price_usd;
+        }
+
+        return (float) $this->price;
     }
 
     public function localizedName(?string $locale = null): string

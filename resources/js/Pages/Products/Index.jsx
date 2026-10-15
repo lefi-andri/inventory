@@ -15,6 +15,7 @@ const initialForm = {
     sku: '',
     description: '',
     price: '',
+    price_usd: '',
     cost: '',
     stock: 0,
     low_stock_threshold: 5,
@@ -101,6 +102,7 @@ export default function ProductsIndex({ products, categories, filters }) {
             sku: product.sku,
             description: idDesc,
             price: product.price,
+            price_usd: product.price_usd !== null && product.price_usd !== undefined ? product.price_usd : '',
             cost: product.cost,
             stock: product.stock,
             low_stock_threshold: product.low_stock_threshold,
@@ -298,8 +300,11 @@ export default function ProductsIndex({ products, categories, filters }) {
                                     </td>
                                     <td className="px-4 py-4 text-sm font-medium text-slate-600">{product.category || 'Tanpa kategori'}</td>
                                     <td className="px-4 py-4">
-                                        <p className="text-sm font-extrabold">{currency(product.price)}</p>
-                                        <p className="text-xs text-slate-500">Modal {currency(product.cost)}</p>
+                                        <p className="text-sm font-extrabold text-slate-900">{currency(product.price, 'IDR')}</p>
+                                        {product.price_usd !== null && product.price_usd !== undefined && (
+                                            <p className="text-xs font-bold text-emerald-600">{currency(product.price_usd, 'USD')}</p>
+                                        )}
+                                        <p className="text-xs text-slate-400">Modal {currency(product.cost, 'IDR')}</p>
                                     </td>
                                     <td className="px-4 py-4">
                                         <span className={`text-sm font-black ${product.stock <= product.low_stock_threshold ? 'text-red-600' : 'text-slate-900'}`}>{product.stock}</span>
@@ -593,13 +598,72 @@ export default function ProductsIndex({ products, categories, filters }) {
                             <SearchSelect options={categoryOptions} value={form.data.category_id} onChange={(value) => form.setData('category_id', value)} placeholder="Cari kategori..." noOptionsMessage="Kategori tidak ditemukan" aria-label="Kategori produk" />
                         </Field>
 
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Field label="Harga jual" error={form.errors.price}>
-                                <input type="number" min="0" value={form.data.price} onChange={(e) => form.setData('price', e.target.value)} className="app-field" required />
-                            </Field>
-                            <Field label="Harga modal" error={form.errors.cost}>
-                                <input type="number" min="0" value={form.data.cost} onChange={(e) => form.setData('cost', e.target.value)} className="app-field" required />
-                            </Field>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                            <div className="mb-3.5">
+                                <span className="block text-sm font-extrabold text-slate-900">Penetapan Harga Produk (Multi-Mata Uang)</span>
+                                <span className="text-xs text-slate-500">Tentukan harga jual produk dalam Rupiah (IDR) dan Dollar (USD). Storefront otomatis menampilkan harga sesuai mata uang toko yang aktif.</span>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field label="Harga jual Rupiah (IDR)" error={form.errors.price}>
+                                    <div className="relative">
+                                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={form.data.price}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                form.setData((prev) => {
+                                                    const updates = { ...prev, price: val };
+                                                    if (!prev.price_usd && val && Number(val) > 0) {
+                                                        updates.price_usd = (Number(val) / 15000).toFixed(2);
+                                                    }
+                                                    return updates;
+                                                });
+                                            }}
+                                            placeholder="150000"
+                                            className="app-field pl-10 font-bold"
+                                            required
+                                        />
+                                    </div>
+                                    <span className="mt-1 block text-[11px] text-slate-400">Digunakan saat mata uang toko aktif dalam Rupiah (IDR).</span>
+                                </Field>
+
+                                <Field label="Harga jual Dollar (USD)" error={form.errors.price_usd}>
+                                    <div className="relative">
+                                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-600">$</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={form.data.price_usd}
+                                            onChange={(e) => form.setData('price_usd', e.target.value)}
+                                            placeholder="10.00"
+                                            className="app-field pl-8 font-bold"
+                                        />
+                                    </div>
+                                    <span className="mt-1 block text-[11px] text-slate-400">Digunakan saat mata uang toko aktif dalam Dollar (USD).</span>
+                                </Field>
+                            </div>
+
+                            <div className="mt-4 border-t border-slate-200/80 pt-3.5">
+                                <Field label="Harga modal produk (IDR)" error={form.errors.cost}>
+                                    <div className="relative">
+                                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={form.data.cost}
+                                            onChange={(e) => form.setData('cost', e.target.value)}
+                                            placeholder="90000"
+                                            className="app-field pl-10"
+                                            required
+                                        />
+                                    </div>
+                                    <span className="mt-1 block text-[11px] text-slate-400">Harga modal dasar perolehan untuk kalkulasi laba internal inventori.</span>
+                                </Field>
+                            </div>
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">

@@ -57,6 +57,7 @@ class OrderEmailService
             'store_name' => SiteSetting::current()->brand_name,
             'order_number' => $order->order_number,
             'customer_name' => $order->customer_name,
+            'currency' => $order->currency ?: 'IDR',
             'status' => $order->status,
             'status_label' => $this->statusLabel($order->status),
             'payment_status' => $order->payment_status,

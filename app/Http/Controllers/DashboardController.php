@@ -5,11 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\AdminNotificationService;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly AdminNotificationService $notificationService)
+    {
+    }
+
     public function index(): Response
     {
         $lowStockQuery = Product::query()
@@ -41,6 +46,7 @@ class DashboardController extends Controller
                 'after_stock' => $movement->after_stock,
                 'created_at' => $movement->created_at,
             ]),
+            'adminNotifications' => $this->notificationService->getNotificationsData(),
         ]);
     }
 }

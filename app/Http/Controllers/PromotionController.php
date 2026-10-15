@@ -57,6 +57,7 @@ class PromotionController extends Controller
     public function updatePayment(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'currency' => ['nullable', 'string', 'in:IDR,USD'],
             'bank_transfer_enabled' => ['required', 'boolean'],
             'bank_name' => ['nullable', 'required_if:bank_transfer_enabled,true', 'string', 'max:100'],
             'bank_account_number' => ['nullable', 'required_if:bank_transfer_enabled,true', 'string', 'max:100'],
@@ -64,6 +65,8 @@ class PromotionController extends Controller
             'cod_enabled' => ['required', 'boolean'],
             'payment_instructions' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        $data['currency'] = $data['currency'] ?? 'IDR';
 
         if (! $data['bank_transfer_enabled'] && ! $data['cod_enabled']) {
             throw \Illuminate\Validation\ValidationException::withMessages([

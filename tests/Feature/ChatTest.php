@@ -3,6 +3,8 @@
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 
@@ -212,3 +214,143 @@ test('admin can close and customer can reopen a conversation with a new message'
 
     expect($conversation->refresh()->status)->toBe('open');
 });
+
+test('customer can upload an image or pdf in chat with or without body text', function () {
+    Storage::fake('public');
+    $customer = chatUser('customer');
+
+    $image = UploadedFile::fake()->image('bukti_transfer.jpg', 600, 400);
+
+    $this->actingAs($customer)
+        ->post(route('customer.chat.messages.store'), [
+            'body' => 'Berikut bukti transfer pesanan',
+            'attachment' => $image,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $conversation = ChatConversation::where('customer_id', $customer->id)->firstOrFail();
+    $message = $conversation->messages()->firstOrFail();
+
+    expect($message->attachment_path)->not->toBeNull()
+        ->and($message->attachment_name)->toBe('bukti_transfer.jpg')
+        ->and(str_starts_with($message->attachment_mime, 'image/'))->toBeTrue();
+
+    Storage::disk('public')->assertExists($message->attachment_path);
+
+    // Test sending PDF without body text
+    $pdf = UploadedFile::fake()->create('resep_dokter.pdf', 500, 'application/pdf');
+
+    $this->actingAs($customer)
+        ->post(route('customer.chat.messages.store'), [
+            'body' => '',
+            'attachment' => $pdf,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $pdfMessage = $conversation->messages()->latest('id')->firstOrFail();
+    expect($pdfMessage->body)->toBeNull()
+        ->and($pdfMessage->attachment_name)->toBe('resep_dokter.pdf')
+        ->and($pdfMessage->attachment_mime)->toBe('application/pdf');
+
+    Storage::disk('public')->assertExists($pdfMessage->attachment_path);
+
+    // Verify chat index exposes attachment details
+    $this->get(route('customer.chat.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Customer/Chat')
+            ->where('conversation.messages.0.attachment.name', 'bukti_transfer.jpg')
+            ->where('conversation.messages.0.attachment.is_image', true)
+            ->where('conversation.messages.1.attachment.name', 'resep_dokter.pdf')
+            ->where('conversation.messages.1.attachment.is_pdf', true));
+});
+
+test('admin can upload an image or pdf when replying or starting a chat', function () {
+    Storage::fake('public');
+    $customer = chatUser('customer');
+    $admin = chatUser('admin');
+
+    $pdf = UploadedFile::fake()->create('invoice_order.pdf', 300, 'application/pdf');
+
+    // Admin start chat with pdf attachment
+    $this->actingAs($admin)
+        ->post(route('admin.chats.store'), [
+            'customer_id' => $customer->id,
+            'body' => 'Berikut invoice pesanan Anda',
+            'attachment' => $pdf,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $conversation = ChatConversation::where('customer_id', $customer->id)->firstOrFail();
+    $message = $conversation->messages()->firstOrFail();
+
+    expect($message->attachment_name)->toBe('invoice_order.pdf');
+    Storage::disk('public')->assertExists($message->attachment_path);
+
+    // Admin reply with image without body text
+    $image = UploadedFile::fake()->image('produk_ready.png', 400, 400);
+
+    $this->actingAs($admin)
+        ->post(route('admin.chats.messages.store', $conversation), [
+            'body' => '',
+            'attachment' => $image,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $replyMessage = $conversation->messages()->latest('id')->firstOrFail();
+    expect($replyMessage->body)->toBeNull()
+        ->and($replyMessage->attachment_name)->toBe('produk_ready.png')
+        ->and(str_starts_with($replyMessage->attachment_mime, 'image/'))->toBeTrue();
+
+    Storage::disk('public')->assertExists($replyMessage->attachment_path);
+});
+
+test('invalid file type or oversized file in chat is rejected', function () {
+    Storage::fake('public');
+    $customer = chatUser('customer');
+
+    $exeFile = UploadedFile::fake()->create('script.exe', 100, 'application/x-msdownload');
+
+    $this->actingAs($customer)
+        ->post(route('customer.chat.messages.store'), [
+            'body' => 'Cek file ini',
+            'attachment' => $exeFile,
+        ])
+        ->assertSessionHasErrors('attachment');
+
+    $oversizedFile = UploadedFile::fake()->create('huge.pdf', 15000, 'application/pdf');
+
+    $this->actingAs($customer)
+        ->post(route('customer.chat.messages.store'), [
+            'body' => 'File besar',
+            'attachment' => $oversizedFile,
+        ])
+        ->assertSessionHasErrors('attachment');
+});
+
+test('customer and admin can send messages containing emoticons and emojis', function () {
+    $customer = chatUser('customer');
+    $admin = chatUser('admin');
+
+    $emojiText = 'Halo min 😀👍 apakah barang ready? 📦🛒✨';
+    $this->actingAs($customer)
+        ->post(route('customer.chat.messages.store'), [
+            'body' => $emojiText,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $conversation = ChatConversation::where('customer_id', $customer->id)->firstOrFail();
+    $message = $conversation->messages()->firstOrFail();
+    expect($message->body)->toBe($emojiText);
+
+    $adminReply = 'Hai! Barang ready ya kak 😊❤️ segera kami proses 🎉';
+    $this->actingAs($admin)
+        ->post(route('admin.chats.messages.store', $conversation), [
+            'body' => $adminReply,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $reply = $conversation->messages()->latest('id')->firstOrFail();
+    expect($reply->body)->toBe($adminReply);
+});
+

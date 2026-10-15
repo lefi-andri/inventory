@@ -38,10 +38,17 @@ class RegisteredUserController extends Controller
             'password' => ['required', Rules\Password::defaults()],
         ]);
 
+        $defaultLocale = 'id';
+        try {
+            $defaultLocale = \App\Models\SiteSetting::current()->default_locale ?: 'id';
+        } catch (\Throwable $e) {
+            $defaultLocale = 'id';
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'locale' => $request->session()->get('locale', 'id'),
+            'locale' => $request->session()->get('locale', $defaultLocale),
             'password' => Hash::make($request->password),
         ]);
 

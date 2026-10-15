@@ -27,6 +27,7 @@ class OrderController extends Controller
         return Inertia::render('Orders/Index', [
             'orders' => Order::with('items')->latest()->get()->map(fn ($order) => [
                 ...$order->only('id', 'order_number', 'customer_name', 'customer_email', 'customer_phone', 'shipping_address', 'shipping_method', 'status', 'payment_status', 'payment_method', 'payment_details', 'promotion_code', 'promotion_kind', 'notes'),
+                'currency' => $order->currency ?: 'IDR',
                 'subtotal' => (float) $order->subtotal,
                 'discount_amount' => (float) $order->discount_amount,
                 'shipping_cost' => (float) $order->shipping_cost,

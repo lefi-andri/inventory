@@ -57,3 +57,15 @@ test('new customer inherits the language selected before registration', function
 
     expect(User::where('email', 'english@example.com')->firstOrFail()->locale)->toBe('en');
 });
+
+test('new customer inherits admin default locale if no guest session locale exists', function () {
+    \App\Models\SiteSetting::current()->update(['default_locale' => 'en']);
+
+    $this->post(route('register'), [
+        'name' => 'Default English Customer',
+        'email' => 'default_en@example.com',
+        'password' => 'password',
+    ])->assertSessionHasNoErrors();
+
+    expect(User::where('email', 'default_en@example.com')->firstOrFail()->locale)->toBe('en');
+});

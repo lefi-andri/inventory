@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('site_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('brand_name')->default('Stokara');
+            $table->string('brand_name')->default('TithoShop');
             $table->json('navbar_links')->nullable();
             $table->text('footer_description')->nullable();
             $table->string('footer_copyright')->nullable();

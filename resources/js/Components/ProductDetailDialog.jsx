@@ -83,7 +83,14 @@ export default function ProductDetailDialog({ product, onClose, onAdd }) {
                         ) : (
                             <div className="mt-6 rounded-2xl bg-slate-50 p-4">
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Harga</p>
-                                <p className="mt-1 text-2xl font-black text-blue-600">{currency(product.price)}</p>
+                                <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                                    <p className="text-2xl font-black text-blue-600">{currency(product.price)}</p>
+                                    {product.price_usd !== null && product.price_usd !== undefined && product.price_idr && (
+                                        <span className="text-sm font-semibold text-slate-400">
+                                            (≈ {document.documentElement?.dataset?.currency === 'USD' ? currency(product.price_idr, 'IDR') : currency(product.price_usd, 'USD')})
+                                        </span>
+                                    )}
+                                </div>
                                 <p className={`mt-2 text-sm font-semibold ${product.stock > 0 ? 'text-emerald-700' : 'text-red-600'}`}>{product.stock > 0 ? `${product.stock} unit tersedia` : 'Stok habis'}</p>
                             </div>
                         )}

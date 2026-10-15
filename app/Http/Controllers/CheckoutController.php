@@ -53,6 +53,9 @@ class CheckoutController extends Controller
             $lines = [];
             $subtotal = 0;
 
+            $commerceSettings = CommerceSetting::current();
+            $isDollar = ($commerceSettings->currency ?? 'IDR') === 'USD';
+
             $items = collect($data['items'])->sortBy('product_id');
 
             foreach ($items as $item) {
@@ -69,9 +72,13 @@ class CheckoutController extends Controller
                     ]);
                 }
 
-                $lineTotal = (float) $product->price * $item['quantity'];
+                $unitPrice = ($isDollar && $product->price_usd !== null && (float) $product->price_usd > 0)
+                    ? (float) $product->price_usd
+                    : (float) $product->price;
+
+                $lineTotal = $unitPrice * $item['quantity'];
                 $subtotal += $lineTotal;
-                $lines[] = compact('product', 'item', 'lineTotal');
+                $lines[] = compact('product', 'item', 'lineTotal', 'unitPrice');
             }
 
             $promotion = null;
@@ -83,7 +90,6 @@ class CheckoutController extends Controller
                 $discountAmount = $promotion->discountFor($subtotal);
             }
 
-            $commerceSettings = CommerceSetting::current();
             $paymentMethod = collect($commerceSettings->availablePaymentMethods())
                 ->firstWhere('value', $data['payment_method']);
 
@@ -100,6 +106,7 @@ class CheckoutController extends Controller
                 'customer_name' => $customer->name,
                 'customer_email' => $customer->email,
                 'order_number' => 'ORD-'.now()->format('ymd').'-'.strtoupper(Str::random(6)),
+                'currency' => $commerceSettings->currency ?? 'IDR',
                 'promotion_id' => $promotion?->id,
                 'promotion_code' => $promotion?->code,
                 'promotion_kind' => $promotion?->kind,
@@ -125,7 +132,7 @@ class CheckoutController extends Controller
                     'product_id' => $product->id,
                     'product_name' => $product->localizedName() ?: $product->name,
                     'sku' => $product->sku,
-                    'price' => $product->price,
+                    'price' => $line['unitPrice'],
                     'quantity' => $quantity,
                     'subtotal' => $line['lineTotal'],
                 ]);
@@ -145,7 +152,8 @@ class CheckoutController extends Controller
 
         $this->orderEmail->created($order);
 
-        return back()->with('success', "Pesanan {$order->order_number} berhasil dibuat. Email konfirmasi sedang dikirim.");
+        return redirect()->route('customer.orders.index')
+            ->with('success', "Pesanan {$order->order_number} berhasil dibuat. Email konfirmasi sedang dikirim.");
     }
 
     public function validatePromotion(Request $request): JsonResponse
@@ -157,7 +165,10 @@ class CheckoutController extends Controller
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
         ]);
 
-        $subtotal = collect($data['items'])->sum(function ($item) {
+        $commerceSettings = CommerceSetting::current();
+        $isDollar = ($commerceSettings->currency ?? 'IDR') === 'USD';
+
+        $subtotal = collect($data['items'])->sum(function ($item) use ($isDollar) {
             $product = Product::query()->visibleToCustomers()->find($item['product_id']);
             if (! $product) {
                 throw ValidationException::withMessages([
@@ -165,14 +176,18 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            return (float) $product->price * $item['quantity'];
+            $unitPrice = ($isDollar && $product->price_usd !== null && (float) $product->price_usd > 0)
+                ? (float) $product->price_usd
+                : (float) $product->price;
+
+            return $unitPrice * $item['quantity'];
         });
         $promotion = Promotion::query()->where('code', strtoupper(trim($data['promotion_code'])))->first();
         if (! $promotion) throw ValidationException::withMessages(['promotion_code' => 'Kode kupon atau voucher tidak ditemukan.']);
         if ($reason = $promotion->unavailableReason($subtotal)) throw ValidationException::withMessages(['promotion_code' => $reason]);
 
         $discount = $promotion->discountFor($subtotal);
-        $shipping = CommerceSetting::current()->shippingFor($subtotal);
+        $shipping = $commerceSettings->shippingFor($subtotal);
 
         return response()->json([
             'promotion' => ['code' => $promotion->code, 'kind' => $promotion->kind, 'description' => $promotion->description],
