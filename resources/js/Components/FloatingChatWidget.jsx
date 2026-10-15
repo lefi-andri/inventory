@@ -90,7 +90,7 @@ export default function FloatingChatWidget() {
                     <header className="relative overflow-hidden bg-gradient-to-br from-blue-700 to-blue-600 px-4 py-4 text-white">
                         <div className="absolute -right-7 -top-9 size-28 rounded-full bg-white/10" />
                         <div className="relative flex items-center gap-3">
-                            <span className="relative grid size-11 shrink-0 place-items-center rounded-full bg-white/15 ring-1 ring-white/20"><Headphones className="size-5" /><span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-blue-600 bg-lime-300" /></span>
+                            <span className="relative grid size-11 shrink-0 place-items-center rounded-full bg-white/15 ring-1 ring-white/20"><Headphones className="size-5" /><span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-blue-600 bg-emerald-400" /></span>
                             <div className="min-w-0 flex-1"><h2 className="truncate font-extrabold">Bantuan {site.brand_name}</h2><p className="mt-0.5 text-xs text-blue-100">Admin siap membantu · diperbarui otomatis</p></div>
                             <Link href={route('customer.chat.index')} className="grid size-9 place-items-center rounded-full text-blue-100 hover:bg-white/10 hover:text-white" aria-label="Buka layar penuh"><Maximize2 className="size-4" /></Link>
                             <button type="button" onClick={() => setOpen(false)} className="grid size-9 place-items-center rounded-full text-blue-100 hover:bg-white/10 hover:text-white" aria-label="Tutup chat"><X className="size-5" /></button>

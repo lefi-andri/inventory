@@ -15,7 +15,7 @@ class Product extends Model implements HasMedia
     use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
-        'category_id', 'name', 'slug', 'sku', 'description', 'price', 'cost',
+        'category_id', 'name', 'slug', 'sku', 'description', 'translations', 'price', 'cost',
         'stock', 'low_stock_threshold', 'is_active', 'is_discontinued',
     ];
 
@@ -26,7 +26,47 @@ class Product extends Model implements HasMedia
             'cost' => 'decimal:2',
             'is_active' => 'boolean',
             'is_discontinued' => 'boolean',
+            'translations' => 'array',
         ];
+    }
+
+    public function localizedName(?string $locale = null): string
+    {
+        $locale = $locale ?? app()->getLocale();
+        $translations = $this->translations ?? [];
+
+        if (! empty($translations[$locale]['name'])) {
+            return (string) $translations[$locale]['name'];
+        }
+
+        if (! empty($translations['id']['name'])) {
+            return (string) $translations['id']['name'];
+        }
+
+        return (string) $this->name;
+    }
+
+    public function localizedDescription(?string $locale = null): ?string
+    {
+        $locale = $locale ?? app()->getLocale();
+        $translations = $this->translations ?? [];
+
+        if (isset($translations[$locale]['description']) && $translations[$locale]['description'] !== '') {
+            return (string) $translations[$locale]['description'];
+        }
+
+        if (isset($translations['id']['description']) && $translations['id']['description'] !== '') {
+            return (string) $translations['id']['description'];
+        }
+
+        return $this->description;
+    }
+
+    public function hasTranslation(string $locale): bool
+    {
+        $translations = $this->translations ?? [];
+
+        return ! empty($translations[$locale]['name']);
     }
 
     public function scopeVisibleToCustomers(Builder $query): Builder

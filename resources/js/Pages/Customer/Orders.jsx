@@ -105,11 +105,43 @@ export default function CustomerOrders({ orders }) {
 
                             {isExpanded && <div className="border-t border-slate-100 px-5 py-5 sm:px-6">
                                 <div className="mb-4 flex flex-wrap gap-1.5 sm:hidden"><Badge variant="outline" className={statusTone(order.status)}>{statusLabel[order.status]}</Badge><Badge variant="outline" className={statusTone(order.payment_status)}>{statusLabel[order.payment_status]}</Badge></div>
-                                <div className="space-y-3">{order.items.map((item) => <button key={item.id} type="button" disabled={!item.product} onClick={() => item.product && setSelectedProduct(item.product)} className={`flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left ${item.product ? 'transition hover:border-blue-200 hover:bg-blue-50/40' : 'cursor-default'}`}>
-                                    {item.product?.image ? <img src={item.product.image} alt="" className="size-14 rounded-xl object-cover" /> : <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-400"><Package className="size-5" /></span>}
-                                    <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold">{item.product_name}</span><span className="mt-1 block text-xs text-slate-500">{item.sku} · {item.quantity} × {currency(item.price)}</span>{item.product && <span className="mt-1 block text-xs font-bold text-blue-600">Lihat detail produk</span>}</span>
-                                    <span className="text-sm font-black">{currency(item.subtotal)}</span>
-                                </button>)}</div>
+                                <div className="space-y-3">{order.items.map((item) => {
+                                    const historicalProduct = {
+                                        ...(item.product || {}),
+                                        id: item.product?.id ?? item.id,
+                                        name: item.product_name,
+                                        sku: item.sku,
+                                        price: item.price,
+                                        quantity: item.quantity,
+                                        subtotal: item.subtotal,
+                                        is_historical: true,
+                                    };
+
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={() => setSelectedProduct(historicalProduct)}
+                                            className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50/40"
+                                        >
+                                            {item.product?.image ? (
+                                                <img src={item.product.image} alt="" className="size-14 rounded-xl object-cover" />
+                                            ) : (
+                                                <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-400">
+                                                    <Package className="size-5" />
+                                                </span>
+                                            )}
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-sm font-bold">{item.product_name}</span>
+                                                <span className="mt-1 block text-xs text-slate-500">
+                                                    {item.sku} · {item.quantity} × {currency(item.price)}
+                                                </span>
+                                                <span className="mt-1 block text-xs font-bold text-blue-600">Lihat detail barang</span>
+                                            </span>
+                                            <span className="text-sm font-black">{currency(item.subtotal)}</span>
+                                        </button>
+                                    );
+                                })}</div>
                                 <div className="mt-5 grid gap-4 rounded-xl bg-slate-50 p-4 text-sm md:grid-cols-[1fr_auto]">
                                     <div><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Dikirim ke</p><p className="mt-1 font-semibold text-slate-800">{order.shipping_address}</p><p className="mt-1 text-xs text-slate-500">{order.shipping_method || 'Pengiriman reguler'}</p>{order.notes && <p className="mt-2 text-slate-500">Catatan: {order.notes}</p>}</div>
                                     <div className="min-w-52 space-y-1.5"><TotalRow label="Subtotal" value={order.subtotal} />{order.discount_amount > 0 && <div className="flex justify-between gap-6 font-semibold text-emerald-700"><span>Diskon {order.promotion_code}</span><span>-{currency(order.discount_amount)}</span></div>}<TotalRow label={order.shipping_method || 'Pengiriman'} value={order.shipping_cost} freeLabel /><div className="flex justify-between gap-6 border-t border-slate-200 pt-2 font-black"><span>Total</span><span>{currency(order.total)}</span></div></div>

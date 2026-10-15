@@ -123,7 +123,7 @@ class CheckoutController extends Controller
                 $quantity = $line['item']['quantity'];
                 $order->items()->create([
                     'product_id' => $product->id,
-                    'product_name' => $product->name,
+                    'product_name' => $product->localizedName() ?: $product->name,
                     'sku' => $product->sku,
                     'price' => $product->price,
                     'quantity' => $quantity,

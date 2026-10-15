@@ -25,7 +25,8 @@ class DashboardController extends Controller
             ],
             'lowStock' => (clone $lowStockQuery)->with('category')->orderBy('stock')->limit(5)->get()->map(fn ($product) => [
                 'id' => $product->id,
-                'name' => $product->name,
+                'name' => $product->localizedName(),
+                'default_name' => $product->name,
                 'sku' => $product->sku,
                 'stock' => $product->stock,
                 'threshold' => $product->low_stock_threshold,
@@ -34,7 +35,7 @@ class DashboardController extends Controller
             'recentOrders' => Order::latest()->limit(6)->get(['id', 'order_number', 'customer_name', 'status', 'payment_status', 'total', 'created_at']),
             'recentMovements' => InventoryMovement::with('product')->latest()->limit(6)->get()->map(fn ($movement) => [
                 'id' => $movement->id,
-                'product' => $movement->product?->name,
+                'product' => $movement->product?->localizedName() ?? $movement->product?->name,
                 'type' => $movement->type,
                 'quantity' => $movement->quantity,
                 'after_stock' => $movement->after_stock,

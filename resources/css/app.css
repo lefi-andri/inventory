@@ -120,11 +120,56 @@
     var(--sidebar-border);
   --color-sidebar-ring:
     var(--sidebar-ring);
+  --color-brand:
+    var(--brand-color);
+  --color-brand-hover:
+    var(--brand-hover);
+  --color-brand-light:
+    var(--brand-light);
+  --color-brand-subtle:
+    var(--brand-subtle);
+  --color-brand-border:
+    var(--brand-border);
+  --color-brand-foreground:
+    var(--brand-foreground);
+  --color-blue-600:
+    var(--brand-color);
+  --color-blue-700:
+    var(--brand-hover);
+  --color-blue-500:
+    var(--brand-light);
+  --color-blue-400:
+    var(--brand-light);
+  --color-blue-300:
+    var(--brand-border-strong);
+  --color-blue-50:
+    var(--brand-subtle);
+  --color-blue-100:
+    var(--brand-border);
+  --color-blue-200:
+    var(--brand-border-strong);
 }
 /*
   ---break---
 */
 :root {
+  --brand-color:
+    #2563eb;
+  --brand-hover:
+    #1d4ed8;
+  --brand-light:
+    #3b82f6;
+  --brand-subtle:
+    #eff6ff;
+  --brand-border:
+    #dbeafe;
+  --brand-border-strong:
+    #bfdbfe;
+  --brand-foreground:
+    #ffffff;
+  --brand-rgb:
+    37, 99, 235;
+
   --radius:
     0.625rem;
   --background:
@@ -140,9 +185,9 @@
   --popover-foreground:
     oklch(0.145 0 0);
   --primary:
-    oklch(0.55 0.22 260);
+    var(--brand-color);
   --primary-foreground:
-    oklch(0.985 0 0);
+    var(--brand-foreground);
   --secondary:
     oklch(0.97 0 0);
   --secondary-foreground:
@@ -162,7 +207,7 @@
   --input:
     oklch(0.922 0 0);
   --ring:
-    oklch(0.55 0.22 260);
+    var(--brand-color);
   --chart-1:
     oklch(0.646 0.222 41.116);
   --chart-2:

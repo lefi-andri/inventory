@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\OrderEmailService;
 use Illuminate\Http\RedirectResponse;
@@ -48,7 +49,7 @@ class CustomerOrderController extends Controller
                     ...$item->only('id', 'product_name', 'sku', 'quantity'),
                     'price' => (float) $item->price,
                     'subtotal' => (float) $item->subtotal,
-                    'product' => $item->product ? $this->transformProduct($item->product) : null,
+                    'product' => $this->transformOrderItemProduct($item),
                 ]),
             ]);
 
@@ -85,22 +86,27 @@ class CustomerOrderController extends Controller
         return back()->with('success', 'Penerimaan barang berhasil dikonfirmasi. Pesanan telah selesai.');
     }
 
-    private function transformProduct(Product $product): array
+    private function transformOrderItemProduct(OrderItem $item): array
     {
-        $images = $product->getMedia('products')->map(fn ($media) => $media->getUrl())->values();
+        $product = $item->product;
+        $images = $product ? $product->getMedia('products')->map(fn ($media) => $media->getUrl())->values() : collect();
 
         return [
-            'id' => $product->id,
-            'name' => $product->name,
-            'sku' => $product->sku,
-            'description' => $product->description,
-            'price' => (float) $product->price,
-            'stock' => $product->stock,
-            'category' => $product->category?->name,
-            'is_active' => $product->is_active,
-            'is_discontinued' => $product->is_discontinued,
+            'id' => $product?->id ?? $item->product_id,
+            'name' => $item->product_name,
+            'default_name' => $item->product_name,
+            'sku' => $item->sku,
+            'description' => $product ? ($product->localizedDescription() ?: $product->description) : null,
+            'price' => (float) $item->price,
+            'quantity' => (int) $item->quantity,
+            'subtotal' => (float) $item->subtotal,
+            'stock' => $product?->stock ?? 0,
+            'category' => $product?->category?->name,
+            'is_active' => $product?->is_active ?? false,
+            'is_discontinued' => $product?->is_discontinued ?? false,
             'image' => $images->first(),
-            'images' => $images,
+            'images' => $images->all(),
+            'is_historical' => true,
         ];
     }
 }
