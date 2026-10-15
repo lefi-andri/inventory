@@ -22,6 +22,12 @@ export default function SiteSettingsEdit({ settings }) {
         if (logoPreview?.startsWith('blob:')) URL.revokeObjectURL(logoPreview);
     }, [logoPreview]);
 
+    useEffect(() => {
+        if (!form.data.logo && !form.data.remove_logo) {
+            setLogoPreview(settings.logo || '');
+        }
+    }, [settings.logo]);
+
     const chooseLogo = (event) => {
         const logo = event.target.files?.[0] || null;
         form.setData((data) => ({ ...data, logo, remove_logo: false }));
@@ -50,7 +56,11 @@ export default function SiteSettingsEdit({ settings }) {
     const submit = (event) => {
         event.preventDefault();
         form.transform((data) => ({ ...data, _method: 'patch' }))
-            .post(route('admin.site-settings.update'), { forceFormData: true, preserveScroll: true });
+            .post(route('admin.site-settings.update'), {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => form.reset('logo', 'remove_logo'),
+            });
     };
 
     return (

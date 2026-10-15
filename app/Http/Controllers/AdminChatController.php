@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChatConversation;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,6 +47,20 @@ class AdminChatController extends Controller
         }
 
         return Inertia::render('Admin/Chats/Index', [
+            'customers' => User::query()
+                ->whereHas('roles', fn ($query) => $query
+                    ->where('name', 'customer')
+                    ->where('guard_name', 'web'))
+                ->with('chatConversation:id,customer_id')
+                ->orderBy('name')
+                ->get(['id', 'name', 'email', 'phone'])
+                ->map(fn ($customer) => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                    'conversation_id' => $customer->chatConversation?->id,
+                ]),
             'conversations' => $conversations->map(fn ($item) => [
                 'id' => $item->id,
                 'customer' => $item->customer,
@@ -67,6 +83,49 @@ class AdminChatController extends Controller
                 ]),
             ] : null,
         ]);
+    }
+
+    public function start(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'customer_id' => ['required', 'integer', 'exists:users,id'],
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $customer = User::query()
+            ->whereHas('roles', fn ($query) => $query
+                ->where('name', 'customer')
+                ->where('guard_name', 'web'))
+            ->find($data['customer_id']);
+
+        if (! $customer) {
+            throw ValidationException::withMessages([
+                'customer_id' => 'Pengguna yang dipilih bukan customer terdaftar.',
+            ]);
+        }
+
+        $conversation = DB::transaction(function () use ($request, $customer, $data) {
+            $conversation = ChatConversation::firstOrCreate(
+                ['customer_id' => $customer->id],
+                ['status' => 'open'],
+            );
+
+            $conversation->messages()->create([
+                'sender_id' => $request->user()->id,
+                'body' => trim($data['body']),
+            ]);
+
+            $conversation->update([
+                'status' => 'open',
+                'last_message_at' => now(),
+            ]);
+
+            return $conversation;
+        });
+
+        return redirect()
+            ->route('admin.chats.index', $conversation)
+            ->with('success', "Percakapan dengan {$customer->name} dimulai.");
     }
 
     public function store(Request $request, ChatConversation $conversation): RedirectResponse

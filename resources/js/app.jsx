@@ -4,6 +4,7 @@ import './bootstrap';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
+import LocalizationProvider from './i18n/LocalizationProvider';
 
 const fallbackAppName = import.meta.env.VITE_APP_NAME || 'Stokara';
 let appName = fallbackAppName;
@@ -24,7 +25,12 @@ createInertiaApp({
 
         const root = createRoot(el);
 
-        root.render(<App {...props} />);
+        document.documentElement.lang = props.initialPage.props.locale || 'id';
+        root.render(
+            <LocalizationProvider initialLocale={props.initialPage.props.locale}>
+                <App {...props} />
+            </LocalizationProvider>,
+        );
     },
     progress: {
         color: '#4B5563',

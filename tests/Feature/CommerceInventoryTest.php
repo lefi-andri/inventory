@@ -52,6 +52,7 @@ test('authenticated customer checkout creates an order and deducts inventory ato
     ]);
 
     $response = $this->actingAs($customer)->post('/checkout', [
+        'payment_method' => 'bank_transfer',
         'items' => [['product_id' => $product->id, 'quantity' => 2]],
     ]);
 
@@ -204,6 +205,62 @@ test('storefront exposes complete product data for the detail dialog', function 
             ->where('products.0.images', []));
 });
 
+test('admin can mark a product discontinued and it disappears from the customer storefront', function () {
+    $product = createProduct();
+    $admin = User::factory()->create();
+    Permission::create(['name' => 'products.update', 'guard_name' => 'web']);
+    $admin->givePermissionTo('products.update');
+
+    $this->actingAs($admin)
+        ->patch(route('products.update', $product), [
+            'category_id' => $product->category_id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'description' => $product->description,
+            'price' => $product->price,
+            'cost' => $product->cost,
+            'low_stock_threshold' => $product->low_stock_threshold,
+            'is_active' => true,
+            'is_discontinued' => true,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($product->refresh()->is_discontinued)->toBeTrue();
+
+    $this->get(route('storefront'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Storefront')
+            ->has('products', 0)
+            ->has('categories', 0));
+});
+
+test('discontinued products cannot be ordered or used for promotion calculation', function () {
+    $product = createProduct(['is_discontinued' => true]);
+    $customer = User::factory()->create([
+        'phone' => '08123456789',
+        'shipping_address' => 'Jl. Testing No. 1, Jakarta',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('checkout.store'), [
+            'payment_method' => 'bank_transfer',
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])
+        ->assertSessionHasErrors('items');
+
+    $this->actingAs($customer)
+        ->postJson(route('checkout.promotion.validate'), [
+            'promotion_code' => 'PROMO',
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('items');
+
+    expect(Order::count())->toBe(0)
+        ->and($product->refresh()->stock)->toBe(10);
+});
+
 test('dashboard is protected by a spatie permission', function () {
     $user = User::factory()->create();
 
@@ -332,6 +389,7 @@ test('checkout rejects duplicate product lines without changing stock', function
 
     $response = $this->actingAs($customer)->post(route('checkout.store'), [
         'shipping_address' => 'Jl. Testing No. 1, Jakarta',
+        'payment_method' => 'bank_transfer',
         'items' => [
             ['product_id' => $product->id, 'quantity' => 3],
             ['product_id' => $product->id, 'quantity' => 3],

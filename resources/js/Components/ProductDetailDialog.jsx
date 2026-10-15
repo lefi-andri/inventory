@@ -45,7 +45,7 @@ export default function ProductDetailDialog({ product, onClose, onAdd }) {
 
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={onClose}>Tutup</Button>
-                    {onAdd && product.is_active !== false && product.stock > 0 && <Button type="button" onClick={addToCart} className="bg-blue-600 hover:bg-blue-700"><ShoppingBag /> Tambah ke keranjang</Button>}
+                    {onAdd && product.is_active !== false && !product.is_discontinued && product.stock > 0 && <Button type="button" onClick={addToCart} className="bg-blue-600 hover:bg-blue-700"><ShoppingBag /> Tambah ke keranjang</Button>}
                 </DialogFooter>
             </DialogContent>}
         </Dialog>

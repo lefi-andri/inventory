@@ -3,8 +3,9 @@ import CustomerAccountLayout from '@/Layouts/CustomerAccountLayout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { CheckCheck, Headphones, Send } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { activeLocale } from '@/lib/format';
 
-const messageTime = (value) => new Intl.DateTimeFormat('id-ID', {
+const messageTime = (value) => new Intl.DateTimeFormat(activeLocale(), {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
 }).format(new Date(value));
 

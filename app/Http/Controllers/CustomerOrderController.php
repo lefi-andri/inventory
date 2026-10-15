@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\OrderEmailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,9 +29,12 @@ class CustomerOrderController extends Controller
                     'customer_email',
                     'customer_phone',
                     'shipping_address',
+                    'shipping_method',
                     'status',
                     'received_at',
                     'payment_status',
+                    'payment_method',
+                    'payment_details',
                     'promotion_code',
                     'promotion_kind',
                     'notes',
@@ -53,9 +57,9 @@ class CustomerOrderController extends Controller
         ]);
     }
 
-    public function confirmReceived(Request $request, Order $order): RedirectResponse
+    public function confirmReceived(Request $request, Order $order, OrderEmailService $orderEmail): RedirectResponse
     {
-        DB::transaction(function () use ($request, $order) {
+        $order = DB::transaction(function () use ($request, $order) {
             $order = $request->user()
                 ->orders()
                 ->whereKey($order->id)
@@ -72,7 +76,11 @@ class CustomerOrderController extends Controller
                 'status' => 'completed',
                 'received_at' => now(),
             ]);
+
+            return $order;
         });
+
+        $orderEmail->received($order);
 
         return back()->with('success', 'Penerimaan barang berhasil dikonfirmasi. Pesanan telah selesai.');
     }
@@ -90,6 +98,7 @@ class CustomerOrderController extends Controller
             'stock' => $product->stock,
             'category' => $product->category?->name,
             'is_active' => $product->is_active,
+            'is_discontinued' => $product->is_discontinued,
             'image' => $images->first(),
             'images' => $images,
         ];

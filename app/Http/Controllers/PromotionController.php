@@ -40,12 +40,41 @@ class PromotionController extends Controller
 
     public function updateShipping(Request $request): RedirectResponse
     {
+        $request->merge([
+            'shipping_label' => $request->input('shipping_label', CommerceSetting::current()->shipping_label),
+        ]);
+
         $data = $request->validate([
+            'shipping_label' => ['required', 'string', 'max:100'],
             'shipping_cost' => ['required', 'numeric', 'min:0'],
             'free_shipping_threshold' => ['nullable', 'numeric', 'min:0'],
         ]);
-        CommerceSetting::query()->updateOrCreate(['id' => 1], $data);
+        $settings = CommerceSetting::current();
+        $settings->fill($data)->save();
         return back()->with('success', 'Pengaturan ongkir berhasil disimpan.');
+    }
+
+    public function updatePayment(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'bank_transfer_enabled' => ['required', 'boolean'],
+            'bank_name' => ['nullable', 'required_if:bank_transfer_enabled,true', 'string', 'max:100'],
+            'bank_account_number' => ['nullable', 'required_if:bank_transfer_enabled,true', 'string', 'max:100'],
+            'bank_account_name' => ['nullable', 'required_if:bank_transfer_enabled,true', 'string', 'max:100'],
+            'cod_enabled' => ['required', 'boolean'],
+            'payment_instructions' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if (! $data['bank_transfer_enabled'] && ! $data['cod_enabled']) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'bank_transfer_enabled' => 'Aktifkan minimal satu metode pembayaran.',
+            ]);
+        }
+
+        $settings = CommerceSetting::current();
+        $settings->fill($data)->save();
+
+        return back()->with('success', 'Informasi pembayaran berhasil disimpan.');
     }
 
     private function validated(Request $request, ?Promotion $promotion = null): array

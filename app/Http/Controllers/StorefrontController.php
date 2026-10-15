@@ -13,10 +13,10 @@ class StorefrontController extends Controller
 {
     public function index(): Response
     {
+        $commerceSettings = CommerceSetting::current();
         $products = Product::query()
             ->with(['category', 'media'])
-            ->where('is_active', true)
-            ->where('stock', '>', 0)
+            ->availableForSale()
             ->latest()
             ->get()
             ->map(function (Product $product) {
@@ -39,7 +39,10 @@ class StorefrontController extends Controller
 
         return Inertia::render('Storefront', [
             'products' => $products,
-            'categories' => Category::orderBy('name')->get(['id', 'name', 'slug']),
+            'categories' => Category::query()
+                ->whereHas('products', fn ($query) => $query->availableForSale())
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug']),
             'heroBanners' => HeroBanner::query()
                 ->with('media')
                 ->where('is_active', true)
@@ -56,11 +59,13 @@ class StorefrontController extends Controller
                     'image' => $banner->getFirstMediaUrl('hero-banners'),
                 ]),
             'shippingSettings' => [
-                'shipping_cost' => (float) CommerceSetting::current()->shipping_cost,
-                'free_shipping_threshold' => CommerceSetting::current()->free_shipping_threshold !== null
-                    ? (float) CommerceSetting::current()->free_shipping_threshold
+                'shipping_label' => $commerceSettings->shipping_label,
+                'shipping_cost' => (float) $commerceSettings->shipping_cost,
+                'free_shipping_threshold' => $commerceSettings->free_shipping_threshold !== null
+                    ? (float) $commerceSettings->free_shipping_threshold
                     : null,
             ],
+            'paymentMethods' => $commerceSettings->availablePaymentMethods(),
         ]);
     }
 }

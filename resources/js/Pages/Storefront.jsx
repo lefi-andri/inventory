@@ -1,6 +1,7 @@
 import { Button } from '@/Components/ui/button';
 import BrandLogo from '@/Components/BrandLogo';
 import FloatingChatWidget from '@/Components/FloatingChatWidget';
+import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/Components/ui/sheet';
@@ -9,7 +10,7 @@ import ProfileCompletionNotice from '@/Components/ProfileCompletionNotice';
 import { currency } from '@/lib/format';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { ArrowRight, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, LayoutDashboard, LogIn, LogOut, Menu, MessageCircle, Minus, Package, Plus, ReceiptText, Search, ShieldCheck, ShoppingBag, Trash2, Truck, UserPlus, UserRound, X } from 'lucide-react';
+import { ArrowRight, Banknote, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CreditCard, LayoutDashboard, LogIn, LogOut, Menu, MessageCircle, Minus, Package, Plus, ReceiptText, Search, ShieldCheck, ShoppingBag, Trash2, Truck, UserPlus, UserRound, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 const CART_STORAGE_KEY = 'stokara.cart.v1';
@@ -23,7 +24,7 @@ const DEFAULT_HERO = {
     image: null,
 };
 
-export default function Storefront({ products, categories, shippingSettings, heroBanners = [] }) {
+export default function Storefront({ products, categories, shippingSettings, paymentMethods = [], heroBanners = [] }) {
     const { auth, flash, site } = usePage().props;
     const [cart, setCart] = useState(() => loadCart(products));
     const [category, setCategory] = useState('all');
@@ -42,6 +43,7 @@ export default function Storefront({ products, categories, shippingSettings, her
         shipping_address: auth.user?.shipping_address ?? '',
         notes: auth.user?.checkout_notes ?? '',
         promotion_code: '',
+        payment_method: paymentMethods[0]?.value ?? '',
         items: [],
     });
     const filtered = useMemo(() => products.filter((product) => (category === 'all' || product.category === category) && product.name.toLowerCase().includes(query.toLowerCase())), [products, category, query]);
@@ -51,6 +53,7 @@ export default function Storefront({ products, categories, shippingSettings, her
     const shipping = promotion?.shipping_cost ?? configuredShipping;
     const discount = promotion?.discount_amount ?? 0;
     const total = Math.max(0, subtotal - discount) + shipping;
+    const selectedPayment = paymentMethods.find((method) => method.value === form.data.payment_method);
     const heroes = heroBanners.length ? heroBanners : [DEFAULT_HERO];
     const activeHero = heroes[activeHeroIndex] ?? heroes[0];
 
@@ -161,7 +164,39 @@ export default function Storefront({ products, categories, shippingSettings, her
             </main>
             <StorefrontFooter site={site} />
 
-            <Dialog open={checkout} onOpenChange={setCheckout}><DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl"><DialogHeader><DialogTitle>Informasi pengiriman</DialogTitle><DialogDescription>Data, promo, dan ongkir akan divalidasi ulang saat pesanan dibuat.</DialogDescription></DialogHeader><form onSubmit={submit} className="space-y-4">{auth.user && <div className="rounded-xl border border-blue-100 bg-blue-50 p-4"><p className="text-xs font-bold uppercase tracking-wider text-blue-600">Akun pemesan</p><p className="mt-1 text-sm font-extrabold text-slate-900">{auth.user.name}</p><p className="text-sm text-slate-600">{auth.user.email}</p></div>}<Field label="Nomor telepon" error={form.errors.customer_phone}><input type="tel" value={form.data.customer_phone} onChange={(e) => form.setData('customer_phone', e.target.value)} className="app-field" required /></Field><Field label="Alamat lengkap" error={form.errors.shipping_address}><textarea value={form.data.shipping_address} onChange={(e) => form.setData('shipping_address', e.target.value)} rows="3" className="app-field resize-none" required /></Field><Field label="Catatan (opsional)" error={form.errors.notes}><textarea value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} rows="2" className="app-field resize-none" /></Field><div><span className="mb-1.5 block text-sm font-bold text-slate-700">Kupon atau voucher</span><div className="flex gap-2"><input value={promotionCode} onChange={(e) => { setPromotionCode(e.target.value.toUpperCase()); setPromotion(null); form.setData('promotion_code', ''); }} className="app-field uppercase" placeholder="Masukkan kode promo" /><Button type="button" variant="outline" onClick={applyPromotion} disabled={checkingPromotion || !promotionCode.trim()}>{checkingPromotion ? 'Memeriksa...' : 'Gunakan'}</Button></div>{promotionError && <p className="mt-1 text-xs font-semibold text-red-600">{promotionError}</p>}{form.errors.promotion_code && <p className="mt-1 text-xs font-semibold text-red-600">{form.errors.promotion_code}</p>}{promotion && <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Kode {promotion.promotion.code} berhasil digunakan.</p>}</div>{form.errors.items && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{form.errors.items}</p>}<div className="rounded-xl bg-slate-50 p-4 text-sm"><div className="flex justify-between text-slate-600"><span>Subtotal</span><span>{currency(subtotal)}</span></div>{discount > 0 && <div className="mt-2 flex justify-between font-semibold text-emerald-700"><span>Diskon {promotion?.promotion?.code}</span><span>-{currency(discount)}</span></div>}<div className="mt-2 flex justify-between text-slate-600"><span>Pengiriman</span><span>{shipping ? currency(shipping) : 'Gratis'}</span></div><div className="mt-3 flex justify-between border-t border-slate-200 pt-3 text-base font-black"><span>Total</span><span>{currency(total)}</span></div></div><DialogFooter><Button type="button" variant="outline" onClick={() => setCheckout(false)}>Kembali</Button><Button disabled={form.processing} className="bg-blue-600 hover:bg-blue-700">{form.processing ? 'Memproses...' : 'Buat pesanan'}</Button></DialogFooter></form></DialogContent></Dialog>
+            <Dialog open={checkout} onOpenChange={setCheckout}>
+                <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Pengiriman & pembayaran</DialogTitle>
+                        <DialogDescription>Periksa alamat, ongkir, metode pembayaran, dan total sebelum membuat pesanan.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={submit} className="space-y-4">
+                        {auth.user && <div className="rounded-xl border border-blue-100 bg-blue-50 p-4"><p className="text-xs font-bold uppercase tracking-wider text-blue-600">Akun pemesan</p><p className="mt-1 text-sm font-extrabold text-slate-900">{auth.user.name}</p><p className="text-sm text-slate-600">{auth.user.email}</p></div>}
+                        <Field label="Nomor telepon" error={form.errors.customer_phone}><input type="tel" value={form.data.customer_phone} onChange={(e) => form.setData('customer_phone', e.target.value)} className="app-field" required /></Field>
+                        <Field label="Alamat lengkap" error={form.errors.shipping_address}><textarea value={form.data.shipping_address} onChange={(e) => form.setData('shipping_address', e.target.value)} rows="3" className="app-field resize-none" required /></Field>
+                        <Field label="Catatan (opsional)" error={form.errors.notes}><textarea value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} rows="2" className="app-field resize-none" /></Field>
+
+                        <div>
+                            <span className="mb-2 block text-sm font-bold text-slate-700">Metode pembayaran</span>
+                            <div className="grid gap-2">
+                                {paymentMethods.map((method) => <label key={method.value} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${form.data.payment_method === method.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-200'}`}>
+                                    <input type="radio" name="payment_method" value={method.value} checked={form.data.payment_method === method.value} onChange={(event) => form.setData('payment_method', event.target.value)} className="mt-1 border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white text-blue-600 shadow-sm">{method.value === 'cod' ? <Banknote className="size-4" /> : <CreditCard className="size-4" />}</span>
+                                    <span><span className="block text-sm font-extrabold text-slate-900">{method.label}</span><span className="mt-0.5 block text-xs text-slate-500">{method.description}</span></span>
+                                </label>)}
+                            </div>
+                            {!paymentMethods.length && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">Belum ada metode pembayaran yang tersedia. Silakan hubungi admin.</p>}
+                            {form.errors.payment_method && <p className="mt-1 text-xs font-semibold text-red-600">{form.errors.payment_method}</p>}
+                            {selectedPayment?.details && Object.keys(selectedPayment.details).length > 0 && <PaymentDetails details={selectedPayment.details} />}
+                        </div>
+
+                        <div><span className="mb-1.5 block text-sm font-bold text-slate-700">Kupon atau voucher</span><div className="flex gap-2"><input value={promotionCode} onChange={(e) => { setPromotionCode(e.target.value.toUpperCase()); setPromotion(null); form.setData('promotion_code', ''); }} className="app-field uppercase" placeholder="Masukkan kode promo" /><Button type="button" variant="outline" onClick={applyPromotion} disabled={checkingPromotion || !promotionCode.trim()}>{checkingPromotion ? 'Memeriksa...' : 'Gunakan'}</Button></div>{promotionError && <p className="mt-1 text-xs font-semibold text-red-600">{promotionError}</p>}{form.errors.promotion_code && <p className="mt-1 text-xs font-semibold text-red-600">{form.errors.promotion_code}</p>}{promotion && <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Kode {promotion.promotion.code} berhasil digunakan.</p>}</div>
+                        {form.errors.items && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{form.errors.items}</p>}
+                        <div className="rounded-xl bg-slate-50 p-4 text-sm"><div className="flex justify-between text-slate-600"><span>Subtotal</span><span>{currency(subtotal)}</span></div>{discount > 0 && <div className="mt-2 flex justify-between font-semibold text-emerald-700"><span>Diskon {promotion?.promotion?.code}</span><span>-{currency(discount)}</span></div>}<div className="mt-2 flex justify-between text-slate-600"><span>{shippingSettings.shipping_label || 'Pengiriman'}</span><span>{shipping ? currency(shipping) : 'Gratis'}</span></div><div className="mt-3 flex justify-between border-t border-slate-200 pt-3 text-base font-black"><span>Total</span><span>{currency(total)}</span></div></div>
+                        <DialogFooter><Button type="button" variant="outline" onClick={() => setCheckout(false)}>Kembali</Button><Button disabled={form.processing || !paymentMethods.length} className="bg-blue-600 hover:bg-blue-700">{form.processing ? 'Memproses...' : 'Buat pesanan'}</Button></DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
             <ProductDetailDialog product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={add} />
             <FloatingChatWidget />
         </div>
@@ -186,6 +221,7 @@ function StorefrontNavbar({ auth, count, mobileMenuOpen, setMobileMenuOpen, cart
                 </nav>
 
                 <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
+                    <LanguageSwitcher compact className="hidden min-[430px]:inline-flex" />
                     {auth.user ? (
                         <>
                             {isCustomer && <div className="hidden items-center gap-1 md:flex">
@@ -226,6 +262,7 @@ function StorefrontNavbar({ auth, count, mobileMenuOpen, setMobileMenuOpen, cart
                             </SheetHeader>
 
                             <div className="flex-1 overflow-y-auto px-4 py-5">
+                                <div className="mb-5"><LanguageSwitcher className="w-full justify-center" /></div>
                                 {auth.user && <div className="mb-5 flex items-center gap-3 rounded-2xl bg-slate-950 p-4 text-white">
                                     <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-blue-600 text-sm font-black">{auth.user.name.slice(0, 2).toUpperCase()}</span>
                                     <div className="min-w-0"><p className="truncate text-sm font-extrabold">{auth.user.name}</p><p className="truncate text-xs text-slate-400">{auth.user.email}</p></div>
@@ -368,6 +405,15 @@ function HeroCarousel({ heroes, activeIndex, activeHero, onChange }) {
 
 function Benefit({ icon: Icon, title, text }) { return <div className="rounded-2xl border border-white/10 bg-white/[.06] p-5 backdrop-blur"><span className="grid size-10 place-items-center rounded-xl bg-lime-300 text-slate-950"><Icon className="size-5" /></span><p className="mt-4 font-extrabold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-slate-400">{text}</p></div>; }
 function Field({ label, error, children }) { return <label className="block"><span className="mb-1.5 block text-sm font-bold text-slate-700">{label}</span>{children}{error && <span className="mt-1 block text-xs text-red-600">{error}</span>}</label>; }
+
+function PaymentDetails({ details }) {
+    return <div className="mt-2 rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950">
+        {details.bank_name && <p><span className="text-blue-600">Bank:</span> <strong>{details.bank_name}</strong></p>}
+        {details.account_number && <p><span className="text-blue-600">Nomor rekening:</span> <strong>{details.account_number}</strong></p>}
+        {details.account_name && <p><span className="text-blue-600">Atas nama:</span> <strong>{details.account_name}</strong></p>}
+        {details.instructions && <p className="mt-2 whitespace-pre-line text-xs leading-5 text-blue-800">{details.instructions}</p>}
+    </div>;
+}
 
 function loadCart(products) {
     if (typeof window === 'undefined') return [];

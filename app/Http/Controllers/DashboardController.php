@@ -12,7 +12,9 @@ class DashboardController extends Controller
 {
     public function index(): Response
     {
-        $lowStockQuery = Product::query()->whereColumn('stock', '<=', 'low_stock_threshold');
+        $lowStockQuery = Product::query()
+            ->where('is_discontinued', false)
+            ->whereColumn('stock', '<=', 'low_stock_threshold');
 
         return Inertia::render('Dashboard', [
             'stats' => [

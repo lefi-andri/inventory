@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,7 @@ class Product extends Model implements HasMedia
 
     protected $fillable = [
         'category_id', 'name', 'slug', 'sku', 'description', 'price', 'cost',
-        'stock', 'low_stock_threshold', 'is_active',
+        'stock', 'low_stock_threshold', 'is_active', 'is_discontinued',
     ];
 
     protected function casts(): array
@@ -24,7 +25,22 @@ class Product extends Model implements HasMedia
             'price' => 'decimal:2',
             'cost' => 'decimal:2',
             'is_active' => 'boolean',
+            'is_discontinued' => 'boolean',
         ];
+    }
+
+    public function scopeVisibleToCustomers(Builder $query): Builder
+    {
+        return $query
+            ->where('is_active', true)
+            ->where('is_discontinued', false);
+    }
+
+    public function scopeAvailableForSale(Builder $query): Builder
+    {
+        return $query
+            ->visibleToCustomers()
+            ->where('stock', '>', 0);
     }
 
     public function registerMediaCollections(): void

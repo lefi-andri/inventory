@@ -1,5 +1,6 @@
 import BrandLogo from '@/Components/BrandLogo';
 import FloatingChatWidget from '@/Components/FloatingChatWidget';
+import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import ProfileCompletionNotice from '@/Components/ProfileCompletionNotice';
 import { Link, router, usePage } from '@inertiajs/react';
 import { LogOut, MessageCircle, ReceiptText, Store, UserRound } from 'lucide-react';
@@ -33,6 +34,7 @@ export default function CustomerAccountLayout({ title, description, children }) 
                                 <span className="hidden sm:inline">{item.label}</span>
                             </Link>;
                         })}
+                        <LanguageSwitcher compact />
                         <button type="button" onClick={() => router.post(route('logout'))} className="flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold text-slate-500 hover:bg-red-50 hover:text-red-600">
                             <LogOut className="size-4" />
                             <span className="hidden md:inline">Keluar</span>
